@@ -78,6 +78,21 @@ export function PetStage3({ accessories }: Props) {
       {accessories.includes("scarf") && (
         <path d="M 100 115 Q 175 140 250 115 Q 245 130 175 135 Q 105 130 100 115" fill="#E74C3C" />
       )}
+      {accessories.includes("apple") && (
+        <g>
+          <circle cx="42" cy="168" r="12" fill="#E74C3C" />
+          <ellipse cx="42" cy="168" rx="12" ry="11" fill="#FF6B6B" />
+          <path d="M 42 156 Q 47 148 52 153" stroke="#4A7C3F" strokeWidth="2" fill="none" />
+        </g>
+      )}
+      {accessories.includes("cookie") && (
+        <g>
+          <circle cx="308" cy="168" r="12" fill="#D4A056" />
+          <circle cx="304" cy="165" r="2.5" fill="#6B4226" />
+          <circle cx="311" cy="171" r="2.5" fill="#6B4226" />
+          <circle cx="312" cy="163" r="2" fill="#6B4226" />
+        </g>
+      )}
     </svg>
   );
 }
