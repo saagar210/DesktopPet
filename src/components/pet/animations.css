@@ -1,0 +1,70 @@
+@keyframes idle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes working-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+@keyframes break-sway {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes celebrating-jump {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-20px) scale(1.1); }
+  50% { transform: translateY(-25px) scale(1.05); }
+  70% { transform: translateY(-15px) scale(1.1); }
+}
+
+@keyframes evolving-glow {
+  0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 transparent); }
+  50% { transform: scale(1.2); filter: brightness(1.5) drop-shadow(0 0 20px rgba(255, 200, 50, 0.8)); }
+  100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 transparent); }
+}
+
+@keyframes clicked-squish {
+  0% { transform: scale(1, 1); }
+  30% { transform: scale(1.15, 0.85); }
+  60% { transform: scale(0.9, 1.1); }
+  100% { transform: scale(1, 1); }
+}
+
+@keyframes float-particle {
+  0% { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-40px) scale(0); opacity: 0; }
+}
+
+.anim-idle {
+  animation: idle-bounce 2s ease-in-out infinite;
+}
+
+.anim-working {
+  animation: working-pulse 1.5s ease-in-out infinite;
+}
+
+.anim-break {
+  animation: break-sway 3s ease-in-out infinite;
+}
+
+.anim-celebrating {
+  animation: celebrating-jump 0.8s ease-in-out infinite;
+}
+
+.anim-evolving {
+  animation: evolving-glow 1.5s ease-in-out;
+}
+
+.anim-clicked {
+  animation: clicked-squish 0.4s ease-out;
+}
+
+.idle-particle {
+  animation: float-particle 2s ease-out forwards;
+  position: absolute;
+  pointer-events: none;
+}
