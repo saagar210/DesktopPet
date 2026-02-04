@@ -1,28 +1,31 @@
 import { useState, useEffect, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invokeMaybe, invokeOr, listenSafe } from "../lib/tauri";
 import type { CoinBalance } from "../store/types";
 
 export function useCoins() {
   const [coins, setCoins] = useState<CoinBalance>({ total: 0, spent: 0 });
 
   useEffect(() => {
-    invoke<CoinBalance>("get_coin_balance").then(setCoins);
+    invokeOr<CoinBalance>("get_coin_balance", undefined, { total: 0, spent: 0 }).then(setCoins);
 
-    const unlisten = listen<CoinBalance>("coins-changed", (event) => {
+    let unlisten = () => {};
+    listenSafe<CoinBalance>("coins-changed", (event) => {
       setCoins(event.payload);
+    }).then((fn) => {
+      unlisten = fn;
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten();
     };
   }, []);
 
   const spend = useCallback(async (amount: number) => {
-    const updated = await invoke<CoinBalance>("spend_coins", { amount });
+    const updated = await invokeMaybe<CoinBalance>("spend_coins", { amount });
+    if (!updated) return coins;
     setCoins(updated);
     return updated;
-  }, []);
+  }, [coins]);
 
   return { coins, available: coins.total - coins.spent, spend };
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { EVOLUTION_THRESHOLDS } from "../lib/constants";
+import { invokeOr, listenSafe } from "../lib/tauri";
 import type { PetState } from "../store/types";
 
 const defaultPet: PetState = {
@@ -15,14 +14,17 @@ export function usePet() {
   const [pet, setPet] = useState<PetState>(defaultPet);
 
   useEffect(() => {
-    invoke<PetState>("get_pet_state").then(setPet);
+    invokeOr<PetState>("get_pet_state", undefined, defaultPet).then(setPet);
 
-    const unlisten = listen<PetState>("pet-state-changed", (event) => {
+    let unlisten = () => {};
+    listenSafe<PetState>("pet-state-changed", (event) => {
       setPet(event.payload);
+    }).then((fn) => {
+      unlisten = fn;
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten();
     };
   }, []);
 

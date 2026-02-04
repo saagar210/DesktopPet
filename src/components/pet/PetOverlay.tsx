@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invokeOr, listenSafe, startDraggingSafe } from "../../lib/tauri";
 import type { PetState } from "../../store/types";
 import { PetCharacter } from "./PetCharacter";
 
@@ -24,16 +22,35 @@ export function PetOverlay() {
   const [animOverride, setAnimOverride] = useState<string | null>(null);
   const [particles, setParticles] = useState<Particle[]>([]);
   const particleId = useRef(0);
+  const particleTimeouts = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearParticleTimeouts = useCallback(() => {
+    particleTimeouts.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    particleTimeouts.current.clear();
+  }, []);
 
   useEffect(() => {
-    invoke<PetState>("get_pet_state").then(setPet);
+    invokeOr<PetState>(
+      "get_pet_state",
+      undefined,
+      {
+        currentStage: 0,
+        animationState: "idle",
+        accessories: [],
+        totalPomodoros: 0,
+      }
+    ).then(setPet);
 
-    const unlisten = listen<PetState>("pet-state-changed", (event) => {
+    let unlisten = () => {};
+    listenSafe<PetState>("pet-state-changed", (event) => {
       setPet(event.payload);
+    }).then((fn) => {
+      unlisten = fn;
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten();
     };
   }, []);
 
@@ -41,6 +58,7 @@ export function PetOverlay() {
   const currentAnim = animOverride ?? pet.animationState;
   useEffect(() => {
     if (currentAnim !== "idle") {
+      clearParticleTimeouts();
       setParticles([]);
       return;
     }
@@ -54,24 +72,42 @@ export function PetOverlay() {
         char: PARTICLE_CHARS[Math.floor(Math.random() * PARTICLE_CHARS.length)],
       };
       setParticles((prev) => [...prev.slice(-5), p]);
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setParticles((prev) => prev.filter((pp) => pp.id !== id));
+        particleTimeouts.current.delete(timeoutId);
       }, 2000);
+      particleTimeouts.current.add(timeoutId);
     }, 800);
 
-    return () => clearInterval(interval);
-  }, [currentAnim]);
+    return () => {
+      clearInterval(interval);
+      clearParticleTimeouts();
+    };
+  }, [clearParticleTimeouts, currentAnim]);
 
   const handleClick = useCallback(() => {
     setAnimOverride("clicked");
-    setTimeout(() => setAnimOverride(null), 400);
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+    clickTimeoutRef.current = setTimeout(() => setAnimOverride(null), 400);
   }, []);
 
   const handleDrag = useCallback(() => {
-    getCurrentWindow().startDragging();
+    startDraggingSafe();
   }, []);
 
   const animClass = `anim-${currentAnim}`;
+
+  useEffect(
+    () => () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+      clearParticleTimeouts();
+    },
+    [clearParticleTimeouts]
+  );
 
   return (
     <div

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { TIMER_PRESETS, DEFAULT_PRESET } from "../lib/constants";
+import { invokeQuiet, listenSafe } from "../lib/tauri";
 import type { TimerPreset } from "../lib/constants";
 
 type TimerPhase = "idle" | "work" | "break" | "celebrating";
@@ -13,10 +13,6 @@ interface PomodoroState {
   sessionId: string | null;
   sessionsCompleted: number;
   preset: TimerPreset;
-}
-
-function invokeQuiet(cmd: string, args?: Record<string, unknown>) {
-  invoke(cmd, args).catch((e) => console.error(`[${cmd}]`, e));
 }
 
 export function usePomodoro() {
@@ -150,13 +146,16 @@ export function usePomodoro() {
 
   // Listen for tray start
   useEffect(() => {
-    const unlisten = listen("tray-start-pomodoro", () => {
+    let unlisten = () => {};
+    listenSafe("tray-start-pomodoro", () => {
       if (state.phase === "idle") {
         start();
       }
+    }).then((fn) => {
+      unlisten = fn;
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten();
     };
   }, [state.phase, start]);
 
