@@ -2,6 +2,7 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
 
+use crate::events::{EVENT_COINS_CHANGED, EVENT_PET_STATE_CHANGED};
 use crate::models::{CoinBalance, PetState};
 
 #[derive(serde::Serialize)]
@@ -63,11 +64,11 @@ pub fn purchase_item(
 
     coins.spent += item.cost;
     store.set("coins", json!(coins));
-    let _ = app.emit("coins-changed", &coins);
+    let _ = app.emit(EVENT_COINS_CHANGED, &coins);
 
     pet.accessories.push(item_id);
     store.set("pet", json!(pet));
-    let _ = app.emit("pet-state-changed", &pet);
+    let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
 
     Ok(pet)
 }

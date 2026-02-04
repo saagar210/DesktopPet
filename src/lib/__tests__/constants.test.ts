@@ -114,15 +114,16 @@ describe("ANIMATION_STATES", () => {
 });
 
 describe("DEFAULT_DAILY_GOALS", () => {
-  it("has 3 goals", () => {
-    expect(DEFAULT_DAILY_GOALS).toHaveLength(3);
+  it("has 4 goals", () => {
+    expect(DEFAULT_DAILY_GOALS).toHaveLength(4);
   });
 
-  it("has pomodoros, breaks, and tasks goals", () => {
+  it("has pomodoros, breaks, tasks, and focus_minutes goals", () => {
     const ids = DEFAULT_DAILY_GOALS.map((g) => g.id);
     expect(ids).toContain("pomodoros");
     expect(ids).toContain("breaks");
     expect(ids).toContain("tasks");
+    expect(ids).toContain("focus_minutes");
   });
 
   it("all goals have positive targets", () => {

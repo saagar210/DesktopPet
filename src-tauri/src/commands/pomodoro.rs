@@ -2,7 +2,8 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
 
-use crate::models::{CoinBalance, PetState, PomodoroSession};
+use crate::events::{EVENT_COINS_CHANGED, EVENT_PET_STATE_CHANGED};
+use crate::models::{CoinBalance, PetState, PomodoroSession, UserProgress};
 
 const COINS_PER_POMODORO: u32 = 10;
 const STAGE_1_THRESHOLD: u32 = 5;
@@ -37,7 +38,7 @@ pub fn start_pomodoro(
         .unwrap_or_default();
     pet.animation_state = "working".to_string();
     store.set("pet", json!(pet));
-    let _ = app.emit("pet-state-changed", &pet);
+    let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
 
     Ok(session)
 }
@@ -56,8 +57,10 @@ pub fn complete_pomodoro(
         .get("sessions")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
+    let mut completed_work_duration = 25 * 60;
     if let Some(s) = sessions.iter_mut().find(|s| s.id == session_id) {
         s.completed_at = Some(chrono::Utc::now().to_rfc3339());
+        completed_work_duration = s.work_duration;
     }
     store.set("sessions", json!(sessions));
 
@@ -68,7 +71,7 @@ pub fn complete_pomodoro(
         .unwrap_or_default();
     coins.total += COINS_PER_POMODORO;
     store.set("coins", json!(coins));
-    let _ = app.emit("coins-changed", &coins);
+    let _ = app.emit(EVENT_COINS_CHANGED, &coins);
 
     // Update pet: increment pomodoros, check evolution
     let mut pet: PetState = store
@@ -76,6 +79,9 @@ pub fn complete_pomodoro(
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
     pet.total_pomodoros += 1;
+    pet.energy = pet.energy.saturating_sub(3);
+    pet.hunger = (pet.hunger + 4).min(100);
+    pet.affection = (pet.affection + 2).min(100);
     pet.animation_state = "celebrating".to_string();
 
     let new_stage = if pet.total_pomodoros >= STAGE_2_THRESHOLD {
@@ -91,11 +97,33 @@ pub fn complete_pomodoro(
         pet.animation_state = "evolving".to_string();
     }
 
+    let progress: UserProgress = store
+        .get("user_progress")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+    let focus_bias = progress.total_focus_minutes + (completed_work_duration / 60);
+    let task_bias = progress.total_tasks_completed * 20;
+    pet.evolution_path = if focus_bias > task_bias + 120 {
+        "scholar".to_string()
+    } else if task_bias > focus_bias {
+        "guardian".to_string()
+    } else {
+        "companion".to_string()
+    };
+    pet.personality = match pet.evolution_path.as_str() {
+        "scholar" => "focused".to_string(),
+        "guardian" => "steady".to_string(),
+        _ => "playful".to_string(),
+    };
+
     store.set("pet", json!(pet));
-    let _ = app.emit("pet-state-changed", &pet);
+    let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
 
     // Update daily goal for pomodoros
     let _ = crate::commands::goals::increment_goal_progress(&app, "pomodoros");
+    let _ = crate::commands::goals::add_goal_progress(&app, "focus_minutes", completed_work_duration / 60);
+    let _ = crate::progression::record_focus_session(&app, completed_work_duration, COINS_PER_POMODORO);
+    let _ = crate::commands::pet::advance_focus_quest(&app, 1);
 
     Ok(pet)
 }

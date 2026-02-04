@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { EVOLUTION_THRESHOLDS } from "../lib/constants";
-import { invokeOr, listenSafe } from "../lib/tauri";
+import { EVENT_PET_STATE_CHANGED } from "../lib/events";
+import { invokeMaybe, invokeOr, listenSafe } from "../lib/tauri";
 import type { PetState } from "../store/types";
 
 const defaultPet: PetState = {
@@ -8,6 +9,17 @@ const defaultPet: PetState = {
   animationState: "idle",
   accessories: [],
   totalPomodoros: 0,
+  mood: "content",
+  energy: 80,
+  hunger: 20,
+  cleanliness: 80,
+  affection: 50,
+  personality: "balanced",
+  evolutionPath: "undetermined",
+  skin: "classic",
+  scene: "meadow",
+  lastInteraction: null,
+  lastCareUpdateAt: new Date().toISOString(),
 };
 
 export function usePet() {
@@ -17,7 +29,7 @@ export function usePet() {
     invokeOr<PetState>("get_pet_state", undefined, defaultPet).then(setPet);
 
     let unlisten = () => {};
-    listenSafe<PetState>("pet-state-changed", (event) => {
+    listenSafe<PetState>(EVENT_PET_STATE_CHANGED, (event) => {
       setPet(event.payload);
     }).then((fn) => {
       unlisten = fn;
@@ -45,5 +57,27 @@ export function usePet() {
   const stageName =
     pet.currentStage === 0 ? "Blob" : pet.currentStage === 1 ? "Buddy" : "Champion";
 
-  return { pet, stageName, progressToNext, stageProgress, stageSpan };
+  const interact = useCallback(async (action: string) => {
+    const updated = await invokeMaybe<PetState>("pet_interact", { action });
+    if (!updated) return null;
+    setPet(updated);
+    return updated;
+  }, []);
+
+  const setCustomization = useCallback(async (skin?: string, scene?: string) => {
+    const updated = await invokeMaybe<PetState>("set_pet_customization", { skin, scene });
+    if (!updated) return null;
+    setPet(updated);
+    return updated;
+  }, []);
+
+  return {
+    pet,
+    stageName,
+    progressToNext,
+    stageProgress,
+    stageSpan,
+    interact,
+    setCustomization,
+  };
 }

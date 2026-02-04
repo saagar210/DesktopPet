@@ -20,7 +20,9 @@ export function ShopPanel({ available, ownedAccessories }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-600">Your balance:</span>
+        <span className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>
+          Your balance:
+        </span>
         <CoinBadge amount={available} />
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -30,26 +32,41 @@ export function ShopPanel({ available, ownedAccessories }: Props) {
           return (
             <div
               key={item.id}
-              className={`p-3 rounded-lg border text-center ${
-                owned ? "bg-green-50 border-green-200" : "bg-white border-gray-100"
-              }`}
+              className="p-3 rounded-lg border text-center"
+              style={{
+                backgroundColor: owned
+                  ? "color-mix(in srgb, var(--accent-soft) 55%, #dcfce7)"
+                  : "var(--card-bg)",
+                borderColor: owned
+                  ? "color-mix(in srgb, var(--accent-color) 25%, #16a34a)"
+                  : "var(--border-color)",
+              }}
             >
               <div className="text-2xl mb-1">{item.icon}</div>
-              <div className="text-sm font-medium text-gray-700">{item.name}</div>
-              <div className="text-xs text-gray-400 mb-2">
+              <div className="text-sm font-medium" style={{ color: "var(--text-color)" }}>{item.name}</div>
+              <div className="text-xs mb-2" style={{ color: "var(--muted-color)" }}>
                 <CoinBadge amount={item.cost} />
               </div>
               {owned ? (
-                <span className="text-xs text-green-600 font-medium">Owned</span>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: "color-mix(in srgb, var(--accent-color) 40%, #15803d)" }}
+                >
+                  Owned
+                </span>
               ) : (
                 <button
                   onClick={() => handleBuy(item.id)}
                   disabled={!canAfford}
-                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                  className="px-3 py-1 text-xs rounded-full font-medium transition-opacity disabled:cursor-not-allowed"
+                  style={
                     canAfford
-                      ? "bg-amber-500 text-white hover:bg-amber-600"
-                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
+                      ? { backgroundColor: "var(--accent-color)", color: "white" }
+                      : {
+                          backgroundColor: "color-mix(in srgb, var(--muted-color) 20%, white)",
+                          color: "var(--muted-color)",
+                        }
+                  }
                 >
                   Buy
                 </button>

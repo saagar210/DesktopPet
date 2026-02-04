@@ -41,4 +41,5 @@ export const DEFAULT_DAILY_GOALS = [
   { id: "pomodoros", description: "Complete 4 pomodoros", target: 4 },
   { id: "breaks", description: "Take 3 breaks", target: 3 },
   { id: "tasks", description: "Complete 2 tasks", target: 2 },
+  { id: "focus_minutes", description: "Focus for 60 minutes", target: 60 },
 ] as const;

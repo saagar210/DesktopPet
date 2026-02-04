@@ -36,7 +36,11 @@ export async function invokeMaybe<T>(
 }
 
 export function invokeQuiet(cmd: string, args?: Record<string, unknown>, tag = cmd) {
-  invoke(cmd, args).catch((error) => warn(tag, error));
+  try {
+    invoke(cmd, args).catch((error) => warn(tag, error));
+  } catch (error) {
+    warn(tag, error);
+  }
 }
 
 export async function listenSafe<T>(

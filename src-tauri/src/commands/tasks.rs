@@ -59,6 +59,7 @@ pub fn toggle_task(
     // If task was just completed, increment goal
     if was_incomplete {
         let _ = crate::commands::goals::increment_goal_progress(&app, "tasks");
+        let _ = crate::progression::record_task_completion(&app);
     }
 
     Ok(tasks)

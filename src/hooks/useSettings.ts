@@ -1,0 +1,49 @@
+import { useCallback, useEffect, useState } from "react";
+import { EVENT_SETTINGS_CHANGED } from "../lib/events";
+import { invokeMaybe, invokeOr, listenSafe } from "../lib/tauri";
+import type { Settings, SettingsPatch } from "../store/types";
+
+const defaultSettings: Settings = {
+  timerPreset: "standard",
+  notificationsEnabled: true,
+  soundsEnabled: false,
+  soundVolume: 0.7,
+  uiTheme: "sunrise",
+  petSkin: "classic",
+  petScene: "meadow",
+  focusGuardrailsEnabled: false,
+  focusGuardrailsWorkOnly: true,
+  focusAllowlist: [],
+  focusBlocklist: [],
+};
+
+export function useSettings() {
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+
+  useEffect(() => {
+    invokeOr<Settings>("get_settings", undefined, defaultSettings).then(setSettings);
+
+    let unlisten = () => {};
+    listenSafe<Settings>(EVENT_SETTINGS_CHANGED, (event) => {
+      setSettings(event.payload);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+
+    return () => {
+      unlisten();
+    };
+  }, []);
+
+  const updateSettings = useCallback(
+    async (patch: SettingsPatch) => {
+      const updated = await invokeMaybe<Settings>("update_settings", { patch });
+      if (!updated) return settings;
+      setSettings(updated);
+      return updated;
+    },
+    [settings]
+  );
+
+  return { settings, updateSettings };
+}

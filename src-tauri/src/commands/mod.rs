@@ -1,6 +1,11 @@
 pub mod coins;
+pub mod customization;
+pub mod focus_guardrails;
 pub mod goals;
 pub mod pet;
 pub mod pomodoro;
+pub mod progress;
+pub mod settings;
 pub mod shop;
 pub mod tasks;
+pub mod timer_runtime;

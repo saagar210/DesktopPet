@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { EVENT_COINS_CHANGED } from "../lib/events";
 import { invokeMaybe, invokeOr, listenSafe } from "../lib/tauri";
 import type { CoinBalance } from "../store/types";
 
@@ -9,7 +10,7 @@ export function useCoins() {
     invokeOr<CoinBalance>("get_coin_balance", undefined, { total: 0, spent: 0 }).then(setCoins);
 
     let unlisten = () => {};
-    listenSafe<CoinBalance>("coins-changed", (event) => {
+    listenSafe<CoinBalance>(EVENT_COINS_CHANGED, (event) => {
       setCoins(event.payload);
     }).then((fn) => {
       unlisten = fn;

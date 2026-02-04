@@ -2,6 +2,7 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
 
+use crate::events::EVENT_COINS_CHANGED;
 use crate::models::CoinBalance;
 
 #[tauri::command]
@@ -33,6 +34,6 @@ pub fn spend_coins(
 
     coins.spent += amount;
     store.set("coins", json!(coins));
-    let _ = app.emit("coins-changed", &coins);
+    let _ = app.emit(EVENT_COINS_CHANGED, &coins);
     Ok(coins)
 }

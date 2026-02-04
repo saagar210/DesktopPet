@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { TIMER_PRESETS, DEFAULT_PRESET } from "../lib/constants";
-import { invokeQuiet, listenSafe } from "../lib/tauri";
+import {
+  EVENT_FOCUS_GUARDRAILS_ALERT,
+  EVENT_TRAY_SET_PRESET,
+  EVENT_TRAY_TIMER_PAUSE,
+  EVENT_TRAY_TIMER_RESET,
+  EVENT_TRAY_TIMER_RESUME,
+  EVENT_TRAY_TIMER_START,
+} from "../lib/events";
+import { invokeMaybe, invokeOr, invokeQuiet, listenSafe } from "../lib/tauri";
 import type { TimerPreset } from "../lib/constants";
+import type { FocusGuardrailsStatus, Settings, TimerRuntimeState } from "../store/types";
 
 type TimerPhase = "idle" | "work" | "break" | "celebrating";
 
@@ -15,6 +23,36 @@ interface PomodoroState {
   preset: TimerPreset;
 }
 
+const TIMER_PHASES: TimerPhase[] = ["idle", "work", "break", "celebrating"];
+
+function isTimerPreset(value: string): value is TimerPreset {
+  return value === "short" || value === "standard" || value === "long";
+}
+
+function normalizePhase(phase: string): TimerPhase {
+  return TIMER_PHASES.includes(phase as TimerPhase) ? (phase as TimerPhase) : "idle";
+}
+
+function playSoundCue(volume: number) {
+  try {
+    const audio = new AudioContext();
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, audio.currentTime);
+    gain.gain.setValueAtTime(Math.max(0, Math.min(1, volume)) * 0.05, audio.currentTime);
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start();
+    oscillator.stop(audio.currentTime + 0.12);
+    oscillator.onended = () => {
+      audio.close().catch(() => undefined);
+    };
+  } catch {
+    // Best effort only.
+  }
+}
+
 export function usePomodoro() {
   const [state, setState] = useState<PomodoroState>({
     phase: "idle",
@@ -25,7 +63,10 @@ export function usePomodoro() {
     preset: DEFAULT_PRESET,
   });
   const [paused, setPaused] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [guardrailMessage, setGuardrailMessage] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previousPhaseRef = useRef<TimerPhase>("idle");
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -43,29 +84,28 @@ export function usePomodoro() {
         secondsLeft: TIMER_PRESETS[preset].work,
         totalSeconds: TIMER_PRESETS[preset].work,
       }));
+      invokeQuiet("update_settings", { patch: { timerPreset: preset } });
     },
     [state.phase]
   );
 
   const start = useCallback(async () => {
+    if (state.phase !== "idle") return;
     const p = TIMER_PRESETS[state.preset];
-    try {
-      const result = await invoke<{ id: string }>("start_pomodoro", {
-        workDuration: p.work,
-        breakDuration: p.break,
-      });
-      setState((s) => ({
-        ...s,
-        phase: "work",
-        secondsLeft: p.work,
-        totalSeconds: p.work,
-        sessionId: result.id,
-      }));
-      setPaused(false);
-    } catch (e) {
-      console.error("[start_pomodoro]", e);
-    }
-  }, [state.preset]);
+    const result = await invokeMaybe<{ id: string }>("start_pomodoro", {
+      workDuration: p.work,
+      breakDuration: p.break,
+    });
+    if (!result) return;
+    setState((s) => ({
+      ...s,
+      phase: "work",
+      secondsLeft: p.work,
+      totalSeconds: p.work,
+      sessionId: result.id,
+    }));
+    setPaused(false);
+  }, [state.phase, state.preset]);
 
   const pause = useCallback(() => setPaused(true), []);
   const resume = useCallback(() => setPaused(false), []);
@@ -82,7 +122,53 @@ export function usePomodoro() {
       sessionId: null,
     }));
     setPaused(false);
+    invokeQuiet("clear_timer_runtime");
   }, [clearTimer, state.preset]);
+
+  useEffect(() => {
+    invokeOr<TimerRuntimeState>(
+      "get_timer_runtime",
+      undefined,
+      {
+        phase: "idle",
+        secondsLeft: TIMER_PRESETS[DEFAULT_PRESET].work,
+        totalSeconds: TIMER_PRESETS[DEFAULT_PRESET].work,
+        paused: false,
+        sessionId: null,
+        sessionsCompleted: 0,
+        preset: DEFAULT_PRESET,
+        lastUpdatedAt: new Date().toISOString(),
+      }
+    ).then((runtime) => {
+      const preset = isTimerPreset(runtime.preset) ? runtime.preset : DEFAULT_PRESET;
+      setState({
+        phase: normalizePhase(runtime.phase),
+        secondsLeft: runtime.secondsLeft,
+        totalSeconds: runtime.totalSeconds,
+        sessionId: runtime.sessionId,
+        sessionsCompleted: runtime.sessionsCompleted,
+        preset,
+      });
+      setPaused(runtime.paused);
+      setHydrated(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    invokeQuiet("save_timer_runtime", {
+      runtime: {
+        phase: state.phase,
+        secondsLeft: state.secondsLeft,
+        totalSeconds: state.totalSeconds,
+        paused,
+        sessionId: state.sessionId,
+        sessionsCompleted: state.sessionsCompleted,
+        preset: state.preset,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+    });
+  }, [hydrated, paused, state]);
 
   // Tick timer
   useEffect(() => {
@@ -144,20 +230,156 @@ export function usePomodoro() {
     return () => clearTimeout(timeout);
   }, [state.phase, state.preset, state.sessionsCompleted]);
 
-  // Listen for tray start
+  useEffect(() => {
+    if (!hydrated) return;
+    if (previousPhaseRef.current === state.phase) return;
+
+    previousPhaseRef.current = state.phase;
+    invokeMaybe<Settings>("get_settings").then((settings) => {
+      if (!settings) return;
+      const title = "Pomodoro Buddy";
+      const message =
+        state.phase === "work"
+          ? "Focus session started."
+          : state.phase === "break"
+            ? "Break time! Step away for a moment."
+            : state.phase === "celebrating"
+              ? "Great work — session complete!"
+              : "Timer is now idle.";
+
+      if (settings.notificationsEnabled && "Notification" in window) {
+        if (Notification.permission === "granted") {
+          new Notification(title, { body: message });
+        } else if (Notification.permission === "default") {
+          Notification.requestPermission().then((permission) => {
+            if (permission === "granted") {
+              new Notification(title, { body: message });
+            }
+          });
+        }
+      }
+
+      if (settings.soundsEnabled) {
+        playSoundCue(settings.soundVolume);
+      }
+
+      if (state.phase === "idle") {
+        setGuardrailMessage(null);
+        return;
+      }
+
+      const sampledHosts = settings.focusBlocklist.slice(0, 5);
+      invokeMaybe<FocusGuardrailsStatus>("apply_focus_guardrails_intervention", {
+        phase: state.phase,
+        hosts: sampledHosts,
+      }).then((status) => {
+        if (!status || !settings.focusGuardrailsEnabled) {
+          setGuardrailMessage(null);
+          return;
+        }
+        if (status.active) {
+          setGuardrailMessage(
+            `${status.message} [${status.nudgeLevel}] action: ${status.recommendedAction}`
+          );
+          if (
+            status.recommendedAction === "pause_timer" &&
+            state.phase === "work" &&
+            !paused
+          ) {
+            setPaused(true);
+          }
+        } else {
+          setGuardrailMessage(null);
+        }
+      });
+    });
+  }, [hydrated, paused, state.phase]);
+
+  useEffect(() => {
+    const onBlur = () => {
+      if (state.phase !== "work") return;
+      invokeMaybe<Settings>("get_settings").then((settings) => {
+        if (!settings?.focusGuardrailsEnabled) return;
+        invokeMaybe<FocusGuardrailsStatus>("apply_focus_guardrails_intervention", {
+          phase: "work",
+          hosts: settings.focusBlocklist.slice(0, 5),
+        }).then((status) => {
+          if (!status?.active) return;
+          setGuardrailMessage(
+            `Intervention: ${status.message} (${status.matchedBlocklist.join(", ") || "no host details"})`
+          );
+          if (status.recommendedAction === "pause_timer" && !paused) {
+            setPaused(true);
+          }
+        });
+      });
+    };
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [paused, state.phase]);
+
   useEffect(() => {
     let unlisten = () => {};
-    listenSafe("tray-start-pomodoro", () => {
-      if (state.phase === "idle") {
-        start();
-      }
+    listenSafe<FocusGuardrailsStatus>(EVENT_FOCUS_GUARDRAILS_ALERT, (event) => {
+      setGuardrailMessage(`Alert: ${event.payload.message}`);
     }).then((fn) => {
       unlisten = fn;
     });
     return () => {
       unlisten();
     };
-  }, [state.phase, start]);
+  }, []);
+
+  // Listen for tray actions
+  useEffect(() => {
+    let unlistenStart = () => {};
+    let unlistenPause = () => {};
+    let unlistenResume = () => {};
+    let unlistenReset = () => {};
+    let unlistenPreset = () => {};
+
+    listenSafe(EVENT_TRAY_TIMER_START, () => {
+      if (state.phase === "idle") start();
+    }).then((fn) => {
+      unlistenStart = fn;
+    });
+
+    listenSafe(EVENT_TRAY_TIMER_PAUSE, () => {
+      if (state.phase !== "idle" && !paused) pause();
+    }).then((fn) => {
+      unlistenPause = fn;
+    });
+
+    listenSafe(EVENT_TRAY_TIMER_RESUME, () => {
+      if (state.phase !== "idle" && paused) resume();
+    }).then((fn) => {
+      unlistenResume = fn;
+    });
+
+    listenSafe(EVENT_TRAY_TIMER_RESET, () => {
+      if (state.phase !== "idle") reset();
+    }).then((fn) => {
+      unlistenReset = fn;
+    });
+
+    listenSafe<string>(EVENT_TRAY_SET_PRESET, (event) => {
+      if (isTimerPreset(event.payload)) {
+        setPreset(event.payload);
+      }
+    }).then((fn) => {
+      unlistenPreset = fn;
+    });
+
+    return () => {
+      unlistenStart();
+      unlistenPause();
+      unlistenResume();
+      unlistenReset();
+      unlistenPreset();
+    };
+  }, [pause, paused, reset, resume, setPreset, start, state.phase]);
 
   return {
     ...state,
@@ -167,5 +389,6 @@ export function usePomodoro() {
     resume,
     reset,
     setPreset,
+    guardrailMessage,
   };
 }

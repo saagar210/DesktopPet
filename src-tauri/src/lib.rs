@@ -1,11 +1,18 @@
 mod commands;
+mod events;
 mod models;
+mod progression;
+mod storage;
 
 use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
+};
+use crate::events::{
+    EVENT_TRAY_SET_PRESET, EVENT_TRAY_TIMER_PAUSE, EVENT_TRAY_TIMER_RESET, EVENT_TRAY_TIMER_RESUME,
+    EVENT_TRAY_TIMER_START,
 };
 
 /// Guards multi-step read-modify-write operations on the store.
@@ -19,8 +26,27 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::pet::get_pet_state,
             commands::pet::set_pet_animation,
+            commands::pet::pet_interact,
+            commands::pet::set_pet_customization,
+            commands::pet::get_pet_events,
+            commands::pet::get_pet_active_quest,
+            commands::pet::resolve_pet_event,
+            commands::pet::roll_pet_event,
             commands::pomodoro::start_pomodoro,
             commands::pomodoro::complete_pomodoro,
+            commands::timer_runtime::get_timer_runtime,
+            commands::timer_runtime::save_timer_runtime,
+            commands::timer_runtime::clear_timer_runtime,
+            commands::progress::get_user_progress,
+            commands::progress::get_daily_summaries,
+            commands::focus_guardrails::evaluate_focus_guardrails,
+            commands::focus_guardrails::apply_focus_guardrails_intervention,
+            commands::focus_guardrails::get_focus_guardrail_events,
+            commands::customization::get_customization_loadouts,
+            commands::customization::save_customization_loadout,
+            commands::customization::apply_customization_loadout,
+            commands::settings::get_settings,
+            commands::settings::update_settings,
             commands::coins::get_coin_balance,
             commands::coins::spend_coins,
             commands::tasks::get_tasks,
@@ -33,15 +59,48 @@ pub fn run() {
             commands::shop::purchase_item,
         ])
         .setup(|app| {
+            let _ = storage::ensure_schema_version(app.handle());
+
             // Build system tray
             let show_pet = MenuItem::with_id(app, "show_pet", "Show Pet", true, None::<&str>)?;
             let show_panel =
                 MenuItem::with_id(app, "show_panel", "Show Panel", true, None::<&str>)?;
             let start_pomo =
                 MenuItem::with_id(app, "start_pomodoro", "Start Pomodoro", true, None::<&str>)?;
+            let pause_pomo =
+                MenuItem::with_id(app, "pause_pomodoro", "Pause Pomodoro", true, None::<&str>)?;
+            let resume_pomo =
+                MenuItem::with_id(app, "resume_pomodoro", "Resume Pomodoro", true, None::<&str>)?;
+            let reset_pomo =
+                MenuItem::with_id(app, "reset_pomodoro", "Reset Pomodoro", true, None::<&str>)?;
+            let preset_short =
+                MenuItem::with_id(app, "preset_short", "Preset: 15 / 5", true, None::<&str>)?;
+            let preset_standard = MenuItem::with_id(
+                app,
+                "preset_standard",
+                "Preset: 25 / 5",
+                true,
+                None::<&str>,
+            )?;
+            let preset_long =
+                MenuItem::with_id(app, "preset_long", "Preset: 50 / 10", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu =
-                Menu::with_items(app, &[&show_pet, &show_panel, &start_pomo, &quit])?;
+                Menu::with_items(
+                    app,
+                    &[
+                        &show_pet,
+                        &show_panel,
+                        &start_pomo,
+                        &pause_pomo,
+                        &resume_pomo,
+                        &reset_pomo,
+                        &preset_short,
+                        &preset_standard,
+                        &preset_long,
+                        &quit,
+                    ],
+                )?;
 
             let _tray = TrayIconBuilder::new()
                 .tooltip("Desktop Pet")
@@ -61,7 +120,25 @@ pub fn run() {
                         }
                     }
                     "start_pomodoro" => {
-                        let _ = app.emit("tray-start-pomodoro", ());
+                        let _ = app.emit(EVENT_TRAY_TIMER_START, ());
+                    }
+                    "pause_pomodoro" => {
+                        let _ = app.emit(EVENT_TRAY_TIMER_PAUSE, ());
+                    }
+                    "resume_pomodoro" => {
+                        let _ = app.emit(EVENT_TRAY_TIMER_RESUME, ());
+                    }
+                    "reset_pomodoro" => {
+                        let _ = app.emit(EVENT_TRAY_TIMER_RESET, ());
+                    }
+                    "preset_short" => {
+                        let _ = app.emit(EVENT_TRAY_SET_PRESET, "short");
+                    }
+                    "preset_standard" => {
+                        let _ = app.emit(EVENT_TRAY_SET_PRESET, "standard");
+                    }
+                    "preset_long" => {
+                        let _ = app.emit(EVENT_TRAY_SET_PRESET, "long");
                     }
                     "quit" => {
                         app.exit(0);

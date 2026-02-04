@@ -5,6 +5,17 @@ export interface PetState {
   animationState: AnimationState;
   accessories: ShopItemId[];
   totalPomodoros: number;
+  mood: string;
+  energy: number;
+  hunger: number;
+  cleanliness: number;
+  affection: number;
+  personality: string;
+  evolutionPath: string;
+  skin: string;
+  scene: string;
+  lastInteraction: string | null;
+  lastCareUpdateAt: string;
 }
 
 export interface PomodoroSession {
@@ -37,6 +48,112 @@ export interface DailyGoal {
 
 export interface Settings {
   timerPreset: TimerPreset;
+  notificationsEnabled: boolean;
+  soundsEnabled: boolean;
+  soundVolume: number;
+  uiTheme: string;
+  petSkin: string;
+  petScene: string;
+  focusGuardrailsEnabled: boolean;
+  focusGuardrailsWorkOnly: boolean;
+  focusAllowlist: string[];
+  focusBlocklist: string[];
+}
+
+export interface SettingsPatch {
+  timerPreset?: TimerPreset;
+  notificationsEnabled?: boolean;
+  soundsEnabled?: boolean;
+  soundVolume?: number;
+  uiTheme?: string;
+  petSkin?: string;
+  petScene?: string;
+  focusGuardrailsEnabled?: boolean;
+  focusGuardrailsWorkOnly?: boolean;
+  focusAllowlist?: string[];
+  focusBlocklist?: string[];
+}
+
+export interface TimerRuntimeState {
+  phase: "idle" | "work" | "break" | "celebrating";
+  secondsLeft: number;
+  totalSeconds: number;
+  paused: boolean;
+  sessionId: string | null;
+  sessionsCompleted: number;
+  preset: TimerPreset;
+  lastUpdatedAt: string;
+}
+
+export interface UserProgress {
+  xpTotal: number;
+  level: number;
+  streakDays: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
+  totalSessions: number;
+  totalFocusMinutes: number;
+  totalTasksCompleted: number;
+}
+
+export interface DailySummary {
+  date: string;
+  sessionsCompleted: number;
+  focusMinutes: number;
+  tasksCompleted: number;
+  goalsCompleted: number;
+  coinsEarned: number;
+  xpEarned: number;
+  guardrailsInterventions: number;
+  highNudges: number;
+}
+
+export interface CustomizationLoadout {
+  name: string;
+  uiTheme: string;
+  petSkin: string;
+  petScene: string;
+  accessories: string[];
+}
+
+export interface FocusGuardrailsStatus {
+  enabled: boolean;
+  active: boolean;
+  phase: string;
+  matchedBlocklist: string[];
+  matchedAllowlist: string[];
+  blockedHostsCount: number;
+  nudgeLevel: string;
+  recommendedAction: string;
+  message: string;
+}
+
+export interface PetEvent {
+  id: string;
+  kind: string;
+  description: string;
+  createdAt: string;
+  resolved: boolean;
+}
+
+export interface PetQuest {
+  id: string;
+  title: string;
+  description: string;
+  targetSessions: number;
+  completedSessions: number;
+  rewardCoins: number;
+  createdAt: string;
+}
+
+export interface FocusGuardrailEvent {
+  id: string;
+  phase: string;
+  hosts: string[];
+  matchedBlocklist: string[];
+  nudgeLevel: string;
+  recommendedAction: string;
+  createdAt: string;
 }
 
 export interface AppState {
@@ -46,4 +163,7 @@ export interface AppState {
   goals: DailyGoal[];
   sessions: PomodoroSession[];
   settings: Settings;
+  timerRuntime: TimerRuntimeState;
+  progress: UserProgress;
+  summaries: DailySummary[];
 }

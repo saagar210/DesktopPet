@@ -8,7 +8,7 @@ interface Props {
 export function ProgressBar({
   value,
   max = 1,
-  color = "bg-blue-500",
+  color = "bg-[var(--accent-color)]",
   className = "",
 }: Props) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
