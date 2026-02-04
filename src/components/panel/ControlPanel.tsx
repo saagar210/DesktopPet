@@ -9,6 +9,7 @@ import { useCustomization } from "../../hooks/useCustomization";
 import { useFocusGuardrails } from "../../hooks/useFocusGuardrails";
 import { useProgress } from "../../hooks/useProgress";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { usePetEvents } from "../../hooks/usePetEvents";
 import { getThemeTokens } from "../../lib/themes";
 import { TimerDisplay } from "./TimerDisplay";
 import { CoinDisplay } from "./CoinDisplay";
@@ -18,11 +19,13 @@ import { ShopPanel } from "./ShopPanel";
 import { SettingsPanel } from "./SettingsPanel";
 import { StatsPanel } from "./StatsPanel";
 import { CustomizationPanel } from "./CustomizationPanel";
+import { PetPanel } from "./PetPanel";
 
-type Tab = "timer" | "goals" | "tasks" | "shop" | "stats" | "customize" | "settings";
+type Tab = "timer" | "pet" | "goals" | "tasks" | "shop" | "stats" | "customize" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "timer", label: "Timer" },
+  { id: "pet", label: "Pet" },
   { id: "goals", label: "Goals" },
   { id: "tasks", label: "Tasks" },
   { id: "shop", label: "Shop" },
@@ -34,7 +37,7 @@ const TABS: { id: Tab; label: string }[] = [
 export function ControlPanel() {
   const [tab, setTab] = useState<Tab>("timer");
   const pomo = usePomodoro();
-  const { pet, stageName, progressToNext, stageProgress, stageSpan, setCustomization } = usePet();
+  const { pet, stageName, progressToNext, stageProgress, stageSpan, setCustomization, interact } = usePet();
   const { available } = useCoins();
   const { goals } = useGoals();
   const { tasks, addTask, toggleTask, deleteTask } = useTasks();
@@ -43,6 +46,7 @@ export function ControlPanel() {
   const { status: guardrailStatus, events: guardrailEvents, evaluate, intervene } = useFocusGuardrails();
   const { progress } = useProgress();
   const { summaries } = useAnalytics();
+  const { events: petEvents, activeQuest, rollEvent, resolveEvent } = usePetEvents();
   const theme = getThemeTokens(settings.uiTheme);
 
   return (
@@ -107,6 +111,16 @@ export function ControlPanel() {
             onPause={pomo.pause}
             onResume={pomo.resume}
             onReset={pomo.reset}
+          />
+        )}
+        {tab === "pet" && (
+          <PetPanel
+            pet={pet}
+            events={petEvents}
+            activeQuest={activeQuest}
+            onInteract={interact}
+            onRollEvent={rollEvent}
+            onResolveEvent={resolveEvent}
           />
         )}
         {tab === "goals" && <GoalsList goals={goals} />}

@@ -1,0 +1,142 @@
+import type { PetState, PetEvent, PetQuest } from "../../store/types";
+
+interface Props {
+  pet: PetState;
+  events: PetEvent[];
+  activeQuest: PetQuest | null;
+  onInteract: (action: string) => void;
+  onRollEvent: () => void;
+  onResolveEvent: (eventId: string) => void;
+}
+
+const ACTIONS = [
+  { action: "pet", label: "Pat", icon: "👋" },
+  { action: "feed", label: "Feed", icon: "🍎" },
+  { action: "play", label: "Play", icon: "🎾" },
+  { action: "nap", label: "Nap", icon: "💤" },
+  { action: "clean", label: "Clean", icon: "🛁" },
+  { action: "train", label: "Train", icon: "💪" },
+];
+
+function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs w-16" style={{ color: "var(--muted-color)" }}>{label}</span>
+      <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: "var(--border-color)" }}>
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${value}%`, backgroundColor: color }}
+        />
+      </div>
+      <span className="text-xs w-8 text-right" style={{ color: "var(--text-color)" }}>{value}%</span>
+    </div>
+  );
+}
+
+export function PetPanel({ pet, events, activeQuest, onInteract, onRollEvent, onResolveEvent }: Props) {
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Pet Status */}
+      <div className="rounded-lg p-4" style={{ backgroundColor: "var(--card-bg)" }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium" style={{ color: "var(--text-color)" }}>Pet Status</h3>
+          <span className="text-sm px-2 py-0.5 rounded-full capitalize" style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent-color)" }}>
+            {pet.mood}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <StatBar label="Energy" value={pet.energy} color="#22c55e" />
+          <StatBar label="Hunger" value={100 - pet.hunger} color="#f97316" />
+          <StatBar label="Clean" value={pet.cleanliness} color="#3b82f6" />
+          <StatBar label="Bond" value={pet.affection} color="#ec4899" />
+        </div>
+        <div className="mt-3 pt-3 flex items-center justify-between text-xs" style={{ borderTop: "1px solid var(--border-color)", color: "var(--muted-color)" }}>
+          <span>Path: <span className="capitalize" style={{ color: "var(--text-color)" }}>{pet.evolutionPath}</span></span>
+          <span>Personality: <span className="capitalize" style={{ color: "var(--text-color)" }}>{pet.personality}</span></span>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="rounded-lg p-4" style={{ backgroundColor: "var(--card-bg)" }}>
+        <h3 className="font-medium mb-3" style={{ color: "var(--text-color)" }}>Actions</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {ACTIONS.map((item) => (
+            <button
+              key={item.action}
+              type="button"
+              onClick={() => onInteract(item.action)}
+              className="flex flex-col items-center gap-1 p-3 rounded-lg transition-colors hover:opacity-80"
+              style={{ backgroundColor: "var(--panel-bg)" }}
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-xs" style={{ color: "var(--text-color)" }}>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Active Quest */}
+      {activeQuest && (
+        <div className="rounded-lg p-4" style={{ backgroundColor: "var(--accent-soft)" }}>
+          <h3 className="font-medium mb-2" style={{ color: "var(--accent-color)" }}>Active Quest</h3>
+          <p className="text-sm mb-2" style={{ color: "var(--text-color)" }}>{activeQuest.title}</p>
+          <div className="flex items-center justify-between text-xs" style={{ color: "var(--muted-color)" }}>
+            <span>{activeQuest.completedSessions}/{activeQuest.targetSessions} sessions</span>
+            <span>+{activeQuest.rewardCoins} coins</span>
+          </div>
+          <div className="mt-2 h-2 rounded-full" style={{ backgroundColor: "var(--border-color)" }}>
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${(activeQuest.completedSessions / activeQuest.targetSessions) * 100}%`,
+                backgroundColor: "var(--accent-color)",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Events */}
+      <div className="rounded-lg p-4" style={{ backgroundColor: "var(--card-bg)" }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-medium" style={{ color: "var(--text-color)" }}>Events</h3>
+          <button
+            type="button"
+            onClick={onRollEvent}
+            className="text-xs px-2 py-1 rounded transition-colors hover:opacity-80"
+            style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent-color)" }}
+          >
+            New Quest
+          </button>
+        </div>
+        {events.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--muted-color)" }}>No active events</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {events.slice(0, 5).map((event) => (
+              <div
+                key={event.id}
+                className="flex items-center justify-between gap-2 p-2 rounded text-sm"
+                style={{ backgroundColor: "var(--panel-bg)" }}
+              >
+                <span className={event.resolved ? "opacity-50 line-through" : ""} style={{ color: "var(--text-color)" }}>
+                  {event.description}
+                </span>
+                {!event.resolved && (
+                  <button
+                    type="button"
+                    onClick={() => onResolveEvent(event.id)}
+                    className="text-xs px-2 py-0.5 rounded hover:opacity-80"
+                    style={{ backgroundColor: "var(--accent-color)", color: "white" }}
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

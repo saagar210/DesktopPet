@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { PetOverlay } from "./components/pet/PetOverlay";
-import "./index.css";
+import "./pet.css";
 import "./components/pet/animations.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
