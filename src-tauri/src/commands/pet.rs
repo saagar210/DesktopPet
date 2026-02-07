@@ -6,6 +6,24 @@ use crate::events::{EVENT_COINS_CHANGED, EVENT_PET_STATE_CHANGED};
 use crate::models::{CoinBalance, PetEvent, PetQuest, PetState};
 
 const MAX_PET_EVENTS: usize = 30;
+const ALLOWED_ANIMATIONS: &[&str] = &[
+    "idle",
+    "working",
+    "break",
+    "celebrating",
+    "evolving",
+    "clicked",
+];
+const ALLOWED_SKINS: &[&str] = &["classic", "neon", "pixel", "plush"];
+const ALLOWED_SCENES: &[&str] = &["meadow", "forest", "space", "cozy_room"];
+
+fn validate_variant(value: String, allowed: &[&str], label: &str) -> Result<String, String> {
+    if allowed.iter().any(|candidate| *candidate == value) {
+        Ok(value)
+    } else {
+        Err(format!("Invalid {}: {}", label, value))
+    }
+}
 
 fn clamp_metric(value: i32) -> u32 {
     value.clamp(0, 100) as u32
@@ -87,7 +105,10 @@ fn save_events(app: &AppHandle, events: &[PetEvent]) -> Result<(), String> {
     Ok(())
 }
 
-fn save_bounded_events(app: &AppHandle, mut events: Vec<PetEvent>) -> Result<Vec<PetEvent>, String> {
+fn save_bounded_events(
+    app: &AppHandle,
+    mut events: Vec<PetEvent>,
+) -> Result<Vec<PetEvent>, String> {
     events.sort_by(|a, b| b.created_at.cmp(&a.created_at));
     if events.len() > MAX_PET_EVENTS {
         events.truncate(MAX_PET_EVENTS);
@@ -96,7 +117,12 @@ fn save_bounded_events(app: &AppHandle, mut events: Vec<PetEvent>) -> Result<Vec
     Ok(events)
 }
 
-fn append_event(app: &AppHandle, kind: &str, description: String, resolved: bool) -> Result<(), String> {
+fn append_event(
+    app: &AppHandle,
+    kind: &str,
+    description: String,
+    resolved: bool,
+) -> Result<(), String> {
     let mut events = load_events(app)?;
     events.push(PetEvent {
         id: uuid::Uuid::new_v4().to_string(),
@@ -124,14 +150,24 @@ fn save_active_quest(app: &AppHandle, quest: Option<&PetQuest>) -> Result<(), St
 }
 
 #[tauri::command]
-pub fn get_pet_state(app: AppHandle) -> Result<PetState, String> {
+pub fn get_pet_state(
+    app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
+) -> Result<PetState, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let pet = load_pet(&app)?;
     save_pet(&app, &pet)?;
     Ok(pet)
 }
 
 #[tauri::command]
-pub fn set_pet_animation(app: AppHandle, animation: String) -> Result<PetState, String> {
+pub fn set_pet_animation(
+    app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
+    animation: String,
+) -> Result<PetState, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
+    let animation = validate_variant(animation, ALLOWED_ANIMATIONS, "animation state")?;
     let mut pet = load_pet(&app)?;
     pet.animation_state = animation;
     save_pet(&app, &pet)?;
@@ -209,10 +245,10 @@ pub fn set_pet_customization(
     let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let mut pet = load_pet(&app)?;
     if let Some(skin) = skin {
-        pet.skin = skin;
+        pet.skin = validate_variant(skin, ALLOWED_SKINS, "pet skin")?;
     }
     if let Some(scene) = scene {
-        pet.scene = scene;
+        pet.scene = validate_variant(scene, ALLOWED_SCENES, "pet scene")?;
     }
     save_pet(&app, &pet)?;
     let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
@@ -243,15 +279,16 @@ pub fn resolve_pet_event(
     save_bounded_events(&app, events)
 }
 
-pub fn advance_focus_quest(app: &AppHandle, completed_sessions: u32) -> Result<Option<PetEvent>, String> {
+pub fn advance_focus_quest(
+    app: &AppHandle,
+    completed_sessions: u32,
+) -> Result<Option<PetEvent>, String> {
     let mut quest = match load_active_quest(app)? {
         Some(quest) => quest,
         None => return Ok(None),
     };
 
-    quest.completed_sessions = quest
-        .completed_sessions
-        .saturating_add(completed_sessions);
+    quest.completed_sessions = quest.completed_sessions.saturating_add(completed_sessions);
 
     if quest.completed_sessions < quest.target_sessions {
         save_active_quest(app, Some(&quest))?;
@@ -343,7 +380,7 @@ pub fn roll_pet_event(
         }
     } else if let Some(quest) = active_quest {
         PetEvent {
-            id: quest.id,
+            id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
             description: format!(
                 "Active quest: {} ({}/{})",
@@ -364,7 +401,7 @@ pub fn roll_pet_event(
         };
         save_active_quest(&app, Some(&quest))?;
         PetEvent {
-            id: quest.id,
+            id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
             description: format!(
                 "Quest started: {} (0/{}) for +{} coins.",
@@ -383,7 +420,9 @@ pub fn roll_pet_event(
 
 #[cfg(test)]
 mod tests {
-    use super::{quest_reward_for_stage, quest_target_for_stage};
+    use super::{
+        quest_reward_for_stage, quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
+    };
 
     #[test]
     fn quest_target_scales_by_stage() {
@@ -398,5 +437,12 @@ mod tests {
         assert_eq!(quest_reward_for_stage(0), 12);
         assert_eq!(quest_reward_for_stage(1), 16);
         assert_eq!(quest_reward_for_stage(2), 20);
+    }
+
+    #[test]
+    fn validate_variant_rejects_unknown() {
+        let err =
+            validate_variant("unknown".to_string(), ALLOWED_ANIMATIONS, "animation").unwrap_err();
+        assert!(err.contains("Invalid animation"));
     }
 }

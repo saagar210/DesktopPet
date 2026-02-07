@@ -11,6 +11,8 @@ import { useProgress } from "../../hooks/useProgress";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { usePetEvents } from "../../hooks/usePetEvents";
 import { getThemeTokens } from "../../lib/themes";
+import { invokeMaybe } from "../../lib/tauri";
+import type { AppDiagnostics, AppSnapshot } from "../../store/types";
 import { TimerDisplay } from "./TimerDisplay";
 import { CoinDisplay } from "./CoinDisplay";
 import { GoalsList } from "./GoalsList";
@@ -48,6 +50,52 @@ export function ControlPanel() {
   const { summaries } = useAnalytics();
   const { events: petEvents, activeQuest, rollEvent, resolveEvent } = usePetEvents();
   const theme = getThemeTokens(settings.uiTheme);
+  
+  const exportData = async () => {
+    const snapshot = await invokeMaybe<AppSnapshot>("export_app_snapshot");
+    if (!snapshot) {
+      return "Export failed";
+    }
+    const filename = `desktop-pet-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const payload = new Blob([JSON.stringify(snapshot, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(payload);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    return `Backup exported to ${filename}`;
+  };
+
+  const importData = async (rawJson: string) => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawJson);
+    } catch {
+      return "Import failed: invalid JSON file";
+    }
+    const result = await invokeMaybe<string>("import_app_snapshot", { snapshot: parsed });
+    if (!result) {
+      return "Import failed";
+    }
+    window.location.reload();
+    return result;
+  };
+
+  const resetData = async () => {
+    const result = await invokeMaybe<string>("reset_app_state");
+    if (!result) {
+      return "Reset failed";
+    }
+    window.location.reload();
+    return result;
+  };
+
+  const getDiagnostics = async () => {
+    return await invokeMaybe<AppDiagnostics>("get_app_diagnostics");
+  };
 
   return (
     <div
@@ -192,6 +240,10 @@ export function ControlPanel() {
             onInterveneGuardrails={(phase, hosts) => {
               void intervene(phase, hosts);
             }}
+            onExportData={exportData}
+            onImportData={importData}
+            onResetData={resetData}
+            onGetDiagnostics={getDiagnostics}
             guardrailStatus={guardrailStatus}
             guardrailEvents={guardrailEvents}
             disabled={pomo.phase !== "idle"}

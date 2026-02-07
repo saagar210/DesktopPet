@@ -7,19 +7,58 @@ use crate::{
 };
 
 const MAX_GUARDRAIL_EVENTS: usize = 120;
+const MAX_HOSTS_PER_SAMPLE: usize = 25;
+const MAX_HOST_LEN: usize = 120;
+const ALLOWED_PHASES: &[&str] = &["idle", "work", "break", "celebrating"];
 
 fn load_settings(app: &AppHandle) -> Result<Settings, String> {
-    let store = app.store("store.json").map_err(|e| e.to_string())?;
-    Ok(store
-        .get("settings")
-        .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default())
+    crate::commands::settings::get_settings(app.clone())
+}
+
+fn normalize_host(value: &str) -> Option<String> {
+    let normalized = value.trim().to_ascii_lowercase();
+    if normalized.is_empty() || normalized.chars().count() > MAX_HOST_LEN {
+        return None;
+    }
+
+    if normalized
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '.' || ch == '-')
+    {
+        Some(normalized)
+    } else {
+        None
+    }
+}
+
+fn normalize_hosts(hosts: &[String]) -> Vec<String> {
+    let mut output = Vec::new();
+    for host in hosts {
+        if output.len() >= MAX_HOSTS_PER_SAMPLE {
+            break;
+        }
+        let Some(normalized) = normalize_host(host) else {
+            continue;
+        };
+        if !output.contains(&normalized) {
+            output.push(normalized);
+        }
+    }
+    output
+}
+
+fn host_matches_pattern(host: &str, pattern: &str) -> bool {
+    host == pattern || host.ends_with(&format!(".{}", pattern))
 }
 
 fn match_list(hosts: &[String], patterns: &[String]) -> Vec<String> {
     hosts
         .iter()
-        .filter(|host| patterns.iter().any(|pattern| host.contains(pattern)))
+        .filter(|host| {
+            patterns
+                .iter()
+                .any(|pattern| host_matches_pattern(host, pattern))
+        })
         .cloned()
         .collect()
 }
@@ -70,57 +109,37 @@ fn append_guardrail_event(
     save_guardrail_events(app, &events)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{match_list, nudge_level_for_count};
-
-    #[test]
-    fn match_list_finds_partial_matches() {
-        let hosts = vec!["docs.youtube.com".to_string(), "openai.com".to_string()];
-        let patterns = vec!["youtube".to_string()];
-        let matched = match_list(&hosts, &patterns);
-        assert_eq!(matched, vec!["docs.youtube.com".to_string()]);
-    }
-
-    #[test]
-    fn match_list_returns_empty_when_no_patterns() {
-        let hosts = vec!["example.com".to_string()];
-        let patterns = vec![];
-        let matched = match_list(&hosts, &patterns);
-        assert!(matched.is_empty());
-    }
-
-    #[test]
-    fn nudge_level_thresholds() {
-        assert_eq!(nudge_level_for_count(0), "none");
-        assert_eq!(nudge_level_for_count(1), "medium");
-        assert_eq!(nudge_level_for_count(2), "medium");
-        assert_eq!(nudge_level_for_count(3), "high");
-    }
-}
-
 #[tauri::command]
 pub fn evaluate_focus_guardrails(
     app: AppHandle,
     phase: String,
     hosts: Option<Vec<String>>,
 ) -> Result<FocusGuardrailsStatus, String> {
+    if !ALLOWED_PHASES.iter().any(|candidate| *candidate == phase) {
+        return Err(format!("Invalid focus phase: {}", phase));
+    }
+
     let settings = load_settings(&app)?;
-    let hosts = hosts.unwrap_or_default();
+    let hosts = normalize_hosts(&hosts.unwrap_or_default());
     let matched_blocklist = match_list(&hosts, &settings.focus_blocklist);
     let matched_allowlist = match_list(&hosts, &settings.focus_allowlist);
+    let effective_blocked_hosts: Vec<String> = matched_blocklist
+        .iter()
+        .filter(|host| !matched_allowlist.contains(host))
+        .cloned()
+        .collect();
 
     let phase_is_work = phase == "work";
     let should_apply = settings.focus_guardrails_enabled
         && (!settings.focus_guardrails_work_only || phase_is_work);
-    let active = should_apply && !matched_blocklist.is_empty();
-    let blocked_hosts_count = matched_blocklist.len() as u32;
-    let nudge_level = nudge_level_for_count(matched_blocklist.len()).to_string();
+    let active = should_apply && !effective_blocked_hosts.is_empty();
+    let blocked_hosts_count = effective_blocked_hosts.len() as u32;
+    let nudge_level = nudge_level_for_count(effective_blocked_hosts.len()).to_string();
     let recommended_action = if !should_apply {
         "none".to_string()
-    } else if matched_blocklist.len() >= 3 {
+    } else if effective_blocked_hosts.len() >= 3 {
         "pause_timer".to_string()
-    } else if matched_blocklist.len() >= 1 {
+    } else if !effective_blocked_hosts.is_empty() {
         "show_nudge".to_string()
     } else {
         "none".to_string()
@@ -133,7 +152,7 @@ pub fn evaluate_focus_guardrails(
     } else if active {
         format!(
             "Guardrails active: {} potential distractions matched.",
-            matched_blocklist.len()
+            effective_blocked_hosts.len()
         )
     } else {
         "Guardrails enabled and monitoring.".to_string()
@@ -155,17 +174,16 @@ pub fn evaluate_focus_guardrails(
 #[tauri::command]
 pub fn apply_focus_guardrails_intervention(
     app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
     phase: String,
     hosts: Option<Vec<String>>,
 ) -> Result<FocusGuardrailsStatus, String> {
-    let sampled_hosts = hosts.unwrap_or_default();
-    let mut status = evaluate_focus_guardrails(
-        app.clone(),
-        phase,
-        Some(sampled_hosts.clone()),
-    )?;
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
+    let sampled_hosts = normalize_hosts(&hosts.unwrap_or_default());
+    let mut status = evaluate_focus_guardrails(app.clone(), phase, Some(sampled_hosts.clone()))?;
     if status.recommended_action == "pause_timer" {
-        status.message = "Guardrails intervention triggered: consider pausing and regrouping.".to_string();
+        status.message =
+            "Guardrails intervention triggered: consider pausing and regrouping.".to_string();
         status.active = true;
     }
     if status.active {
@@ -185,4 +203,59 @@ pub fn get_focus_guardrail_events(
     let cap = limit.unwrap_or(30).clamp(1, 120) as usize;
     events.truncate(cap);
     Ok(events)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        match_list, normalize_host, normalize_hosts, nudge_level_for_count, ALLOWED_PHASES,
+    };
+
+    #[test]
+    fn match_list_finds_suffix_matches() {
+        let hosts = vec!["docs.youtube.com".to_string(), "openai.com".to_string()];
+        let patterns = vec!["youtube.com".to_string()];
+        let matched = match_list(&hosts, &patterns);
+        assert_eq!(matched, vec!["docs.youtube.com".to_string()]);
+    }
+
+    #[test]
+    fn match_list_returns_empty_when_no_patterns() {
+        let hosts = vec!["example.com".to_string()];
+        let patterns = vec![];
+        let matched = match_list(&hosts, &patterns);
+        assert!(matched.is_empty());
+    }
+
+    #[test]
+    fn normalize_host_rejects_invalid() {
+        assert!(normalize_host("exa mple.com").is_none());
+        assert!(normalize_host("").is_none());
+    }
+
+    #[test]
+    fn normalize_hosts_caps_and_deduplicates() {
+        let hosts = normalize_hosts(&[
+            "YouTube.com".to_string(),
+            "youtube.com".to_string(),
+            "docs.youtube.com".to_string(),
+        ]);
+        assert_eq!(
+            hosts,
+            vec!["youtube.com".to_string(), "docs.youtube.com".to_string()]
+        );
+    }
+
+    #[test]
+    fn nudge_level_thresholds() {
+        assert_eq!(nudge_level_for_count(0), "none");
+        assert_eq!(nudge_level_for_count(1), "medium");
+        assert_eq!(nudge_level_for_count(2), "medium");
+        assert_eq!(nudge_level_for_count(3), "high");
+    }
+
+    #[test]
+    fn allowed_phases_include_work() {
+        assert!(ALLOWED_PHASES.contains(&"work"));
+    }
 }

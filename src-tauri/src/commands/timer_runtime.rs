@@ -7,12 +7,11 @@ use crate::{
     models::{Settings, TimerRuntimeState},
 };
 
+const MIN_TOTAL_SECONDS: u32 = 60;
+const MAX_TOTAL_SECONDS: u32 = 3 * 60 * 60;
+
 fn load_settings(app: &AppHandle) -> Result<Settings, String> {
-    let store = app.store("store.json").map_err(|e| e.to_string())?;
-    Ok(store
-        .get("settings")
-        .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default())
+    crate::commands::settings::get_settings(app.clone())
 }
 
 fn work_seconds_for_preset(preset: &str) -> u32 {
@@ -32,6 +31,33 @@ fn default_runtime_for_preset(preset: &str) -> TimerRuntimeState {
         last_updated_at: chrono::Utc::now().to_rfc3339(),
         ..Default::default()
     }
+}
+
+fn normalize_phase(phase: &str) -> String {
+    match phase {
+        "idle" | "work" | "break" | "celebrating" => phase.to_string(),
+        _ => "idle".to_string(),
+    }
+}
+
+fn normalize_preset(preset: &str, fallback: &str) -> String {
+    match preset {
+        "short" | "standard" | "long" => preset.to_string(),
+        _ => fallback.to_string(),
+    }
+}
+
+fn sanitize_runtime(mut runtime: TimerRuntimeState, default_preset: &str) -> TimerRuntimeState {
+    runtime.phase = normalize_phase(&runtime.phase);
+    runtime.preset = normalize_preset(&runtime.preset, default_preset);
+    runtime.total_seconds = runtime
+        .total_seconds
+        .clamp(MIN_TOTAL_SECONDS, MAX_TOTAL_SECONDS);
+    runtime.seconds_left = runtime.seconds_left.min(runtime.total_seconds);
+    if matches!(runtime.phase.as_str(), "idle" | "celebrating") {
+        runtime.session_id = None;
+    }
+    runtime
 }
 
 fn apply_elapsed(mut runtime: TimerRuntimeState) -> TimerRuntimeState {
@@ -64,6 +90,7 @@ pub fn get_timer_runtime(app: AppHandle) -> Result<TimerRuntimeState, String> {
         .get("timer_runtime")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_else(|| default_runtime_for_preset(&settings.timer_preset));
+    let runtime = sanitize_runtime(runtime, &settings.timer_preset);
 
     Ok(apply_elapsed(runtime))
 }
@@ -75,7 +102,15 @@ pub fn save_timer_runtime(
     runtime: TimerRuntimeState,
 ) -> Result<TimerRuntimeState, String> {
     let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
+    let settings = load_settings(&app)?;
     let store = app.store("store.json").map_err(|e| e.to_string())?;
+    let runtime = sanitize_runtime(
+        TimerRuntimeState {
+            last_updated_at: chrono::Utc::now().to_rfc3339(),
+            ..runtime
+        },
+        &settings.timer_preset,
+    );
     let runtime = TimerRuntimeState {
         last_updated_at: chrono::Utc::now().to_rfc3339(),
         ..runtime
@@ -98,4 +133,50 @@ pub fn clear_timer_runtime(
     store.set("timer_runtime", json!(runtime));
     let _ = app.emit(EVENT_TIMER_RUNTIME_CHANGED, &runtime);
     Ok(runtime)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{normalize_phase, sanitize_runtime, TimerRuntimeState, MAX_TOTAL_SECONDS};
+
+    #[test]
+    fn normalize_phase_falls_back_to_idle() {
+        assert_eq!(normalize_phase("work"), "work");
+        assert_eq!(normalize_phase("unknown"), "idle");
+    }
+
+    #[test]
+    fn sanitize_runtime_clamps_seconds() {
+        let runtime = TimerRuntimeState {
+            phase: "work".to_string(),
+            seconds_left: u32::MAX,
+            total_seconds: u32::MAX,
+            paused: false,
+            session_id: Some("s1".to_string()),
+            sessions_completed: 0,
+            preset: "standard".to_string(),
+            last_updated_at: chrono::Utc::now().to_rfc3339(),
+        };
+        let sanitized = sanitize_runtime(runtime, "standard");
+        assert_eq!(sanitized.total_seconds, MAX_TOTAL_SECONDS);
+        assert_eq!(sanitized.seconds_left, MAX_TOTAL_SECONDS);
+    }
+
+    #[test]
+    fn sanitize_runtime_clears_session_when_idle() {
+        let runtime = TimerRuntimeState {
+            phase: "invalid".to_string(),
+            seconds_left: 10,
+            total_seconds: 10,
+            paused: false,
+            session_id: Some("s1".to_string()),
+            sessions_completed: 0,
+            preset: "invalid".to_string(),
+            last_updated_at: chrono::Utc::now().to_rfc3339(),
+        };
+        let sanitized = sanitize_runtime(runtime, "short");
+        assert_eq!(sanitized.phase, "idle");
+        assert_eq!(sanitized.preset, "short");
+        assert!(sanitized.session_id.is_none());
+    }
 }

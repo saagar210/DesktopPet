@@ -5,15 +5,9 @@
   "windows": ["pet", "panel"],
   "permissions": [
     "core:default",
-    "core:event:default",
     "core:event:allow-emit",
     "core:event:allow-listen",
-    "core:window:default",
     "core:window:allow-start-dragging",
-    "core:window:allow-show",
-    "core:window:allow-hide",
-    "core:window:allow-set-focus",
-    "core:window:allow-unminimize",
     "store:default"
   ]
 }

@@ -20,14 +20,20 @@ export function useProgress() {
   useEffect(() => {
     invokeOr<UserProgress>("get_user_progress", undefined, defaultProgress).then(setProgress);
 
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe<UserProgress>(EVENT_PROFILE_CHANGED, (event) => {
       setProgress(event.payload);
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
 
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, []);
