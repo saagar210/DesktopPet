@@ -31,7 +31,11 @@ fn update_streak(progress: &mut UserProgress, active_date: &str) {
                 (Some(prev), Some(current)) => current.signed_duration_since(prev).num_days() == 1,
                 _ => false,
             };
-            progress.streak_days = if continues_streak { progress.streak_days + 1 } else { 1 };
+            progress.streak_days = if continues_streak {
+                progress.streak_days + 1
+            } else {
+                1
+            };
             progress.longest_streak = progress.longest_streak.max(progress.streak_days);
             progress.last_active_date = Some(active_date.to_string());
         }

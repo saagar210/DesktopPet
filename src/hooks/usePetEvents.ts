@@ -1,16 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invokeMaybe, invokeOr } from "../lib/tauri";
 import type { PetEvent, PetQuest } from "../store/types";
 
 export function usePetEvents() {
   const [events, setEvents] = useState<PetEvent[]>([]);
   const [activeQuest, setActiveQuest] = useState<PetQuest | null>(null);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const refresh = useCallback(() => {
     Promise.all([
       invokeOr<PetEvent[]>("get_pet_events", undefined, []),
       invokeOr<PetQuest | null>("get_pet_active_quest", undefined, null),
     ]).then(([latestEvents, quest]) => {
+      if (!mounted.current) {
+        return;
+      }
       setEvents(latestEvents);
       setActiveQuest(quest);
     });

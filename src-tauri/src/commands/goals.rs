@@ -50,7 +50,8 @@ fn load_goals(app: &AppHandle) -> Result<Vec<DailyGoal>, String> {
         .unwrap_or_default();
 
     let date = today();
-    if goals.is_empty() || goals[0].date != date {
+    let has_current_date = !goals.is_empty() && goals.iter().all(|goal| goal.date == date);
+    if !has_current_date {
         let new_goals = default_goals(&date);
         store.set("goals", json!(new_goals));
         Ok(store
@@ -63,7 +64,11 @@ fn load_goals(app: &AppHandle) -> Result<Vec<DailyGoal>, String> {
 }
 
 #[tauri::command]
-pub fn get_daily_goals(app: AppHandle) -> Result<Vec<DailyGoal>, String> {
+pub fn get_daily_goals(
+    app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
+) -> Result<Vec<DailyGoal>, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     load_goals(&app)
 }
 
@@ -83,7 +88,7 @@ fn save_goal_progress_delta(app: &AppHandle, goal_id: &str, delta: u32) -> Resul
     if let Some(goal) = goals.iter_mut().find(|g| g.id == goal_id) {
         let was_complete = goal.progress >= goal.target;
         if !was_complete {
-            goal.progress = (goal.progress + delta).min(goal.target);
+            goal.progress = goal.progress.saturating_add(delta).min(goal.target);
             let now_complete = goal.progress >= goal.target;
             newly_completed = now_complete && !was_complete;
         }
@@ -103,17 +108,20 @@ fn save_goal_progress_delta(app: &AppHandle, goal_id: &str, delta: u32) -> Resul
 #[tauri::command]
 pub fn update_goal_progress(
     app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
     goal_id: String,
     progress: u32,
 ) -> Result<Vec<DailyGoal>, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let mut goals = load_goals(&app)?;
-    let mut newly_completed = false;
-    if let Some(goal) = goals.iter_mut().find(|g| g.id == goal_id) {
+    let newly_completed = if let Some(goal) = goals.iter_mut().find(|g| g.id == goal_id) {
         let was_complete = goal.progress >= goal.target;
         goal.progress = progress.min(goal.target);
         let now_complete = goal.progress >= goal.target;
-        newly_completed = now_complete && !was_complete;
-    }
+        now_complete && !was_complete
+    } else {
+        return Err("Goal not found".to_string());
+    };
     let store = app.store("store.json").map_err(|e| e.to_string())?;
     store.set("goals", json!(goals));
     let _ = app.emit(EVENT_GOALS_CHANGED, &goals);
@@ -149,7 +157,11 @@ mod tests {
     fn default_goals_have_positive_targets() {
         let goals = default_goals("2025-06-01");
         for goal in &goals {
-            assert!(goal.target > 0, "goal {} should have positive target", goal.id);
+            assert!(
+                goal.target > 0,
+                "goal {} should have positive target",
+                goal.id
+            );
         }
     }
 
@@ -166,7 +178,11 @@ mod tests {
     fn default_goals_have_descriptions() {
         let goals = default_goals("2025-01-01");
         for goal in &goals {
-            assert!(!goal.description.is_empty(), "goal {} should have description", goal.id);
+            assert!(
+                !goal.description.is_empty(),
+                "goal {} should have description",
+                goal.id
+            );
         }
     }
 

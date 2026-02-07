@@ -15,12 +15,36 @@ pub struct ShopItem {
 
 fn shop_catalog() -> Vec<ShopItem> {
     vec![
-        ShopItem { id: "party_hat".into(), name: "Party Hat".into(), cost: 30 },
-        ShopItem { id: "bow_tie".into(), name: "Bow Tie".into(), cost: 20 },
-        ShopItem { id: "sunglasses".into(), name: "Sunglasses".into(), cost: 25 },
-        ShopItem { id: "scarf".into(), name: "Scarf".into(), cost: 35 },
-        ShopItem { id: "apple".into(), name: "Apple".into(), cost: 5 },
-        ShopItem { id: "cookie".into(), name: "Cookie".into(), cost: 10 },
+        ShopItem {
+            id: "party_hat".into(),
+            name: "Party Hat".into(),
+            cost: 30,
+        },
+        ShopItem {
+            id: "bow_tie".into(),
+            name: "Bow Tie".into(),
+            cost: 20,
+        },
+        ShopItem {
+            id: "sunglasses".into(),
+            name: "Sunglasses".into(),
+            cost: 25,
+        },
+        ShopItem {
+            id: "scarf".into(),
+            name: "Scarf".into(),
+            cost: 35,
+        },
+        ShopItem {
+            id: "apple".into(),
+            name: "Apple".into(),
+            cost: 5,
+        },
+        ShopItem {
+            id: "cookie".into(),
+            name: "Cookie".into(),
+            cost: 10,
+        },
     ]
 }
 

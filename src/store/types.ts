@@ -167,3 +167,35 @@ export interface AppState {
   progress: UserProgress;
   summaries: DailySummary[];
 }
+
+export interface AppSnapshot {
+  schemaVersion: number;
+  exportedAt: string;
+  pet: PetState;
+  coins: CoinBalance;
+  tasks: Task[];
+  goals: DailyGoal[];
+  sessions: PomodoroSession[];
+  settings: Settings;
+  timerRuntime: TimerRuntimeState;
+  progress: UserProgress;
+  summaries: DailySummary[];
+  customizationLoadouts: CustomizationLoadout[];
+  petEvents: PetEvent[];
+  petActiveQuest: PetQuest | null;
+  focusGuardrailEvents: FocusGuardrailEvent[];
+}
+
+export interface AppDiagnostics {
+  appVersion: string;
+  schemaVersion: number;
+  currentSchemaVersion: number;
+  exportedAt: string;
+  os: string;
+  arch: string;
+  tasksCount: number;
+  sessionsCount: number;
+  summariesCount: number;
+  guardrailEventsCount: number;
+  hasActiveQuest: boolean;
+}

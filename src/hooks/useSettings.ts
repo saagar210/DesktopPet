@@ -23,14 +23,20 @@ export function useSettings() {
   useEffect(() => {
     invokeOr<Settings>("get_settings", undefined, defaultSettings).then(setSettings);
 
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe<Settings>(EVENT_SETTINGS_CHANGED, (event) => {
       setSettings(event.payload);
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
 
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, []);

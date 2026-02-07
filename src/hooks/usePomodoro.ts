@@ -321,63 +321,64 @@ export function usePomodoro() {
   }, [paused, state.phase]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe<FocusGuardrailsStatus>(EVENT_FOCUS_GUARDRAILS_ALERT, (event) => {
       setGuardrailMessage(`Alert: ${event.payload.message}`);
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, []);
 
   // Listen for tray actions
   useEffect(() => {
-    let unlistenStart = () => {};
-    let unlistenPause = () => {};
-    let unlistenResume = () => {};
-    let unlistenReset = () => {};
-    let unlistenPreset = () => {};
+    let cancelled = false;
+    const listeners: Array<() => void> = [];
+    const register = (promise: Promise<() => void>) => {
+      promise.then((fn) => {
+        if (cancelled) {
+          fn();
+          return;
+        }
+        listeners.push(fn);
+      });
+    };
 
-    listenSafe(EVENT_TRAY_TIMER_START, () => {
+    register(listenSafe(EVENT_TRAY_TIMER_START, () => {
       if (state.phase === "idle") start();
-    }).then((fn) => {
-      unlistenStart = fn;
-    });
+    }));
 
-    listenSafe(EVENT_TRAY_TIMER_PAUSE, () => {
+    register(listenSafe(EVENT_TRAY_TIMER_PAUSE, () => {
       if (state.phase !== "idle" && !paused) pause();
-    }).then((fn) => {
-      unlistenPause = fn;
-    });
+    }));
 
-    listenSafe(EVENT_TRAY_TIMER_RESUME, () => {
+    register(listenSafe(EVENT_TRAY_TIMER_RESUME, () => {
       if (state.phase !== "idle" && paused) resume();
-    }).then((fn) => {
-      unlistenResume = fn;
-    });
+    }));
 
-    listenSafe(EVENT_TRAY_TIMER_RESET, () => {
+    register(listenSafe(EVENT_TRAY_TIMER_RESET, () => {
       if (state.phase !== "idle") reset();
-    }).then((fn) => {
-      unlistenReset = fn;
-    });
+    }));
 
-    listenSafe<string>(EVENT_TRAY_SET_PRESET, (event) => {
+    register(listenSafe<string>(EVENT_TRAY_SET_PRESET, (event) => {
       if (isTimerPreset(event.payload)) {
         setPreset(event.payload);
       }
-    }).then((fn) => {
-      unlistenPreset = fn;
-    });
+    }));
 
     return () => {
-      unlistenStart();
-      unlistenPause();
-      unlistenResume();
-      unlistenReset();
-      unlistenPreset();
+      cancelled = true;
+      for (const unlisten of listeners) {
+        unlisten();
+      }
     };
   }, [pause, paused, reset, resume, setPreset, start, state.phase]);
 

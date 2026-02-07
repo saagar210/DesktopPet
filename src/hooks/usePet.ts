@@ -28,14 +28,20 @@ export function usePet() {
   useEffect(() => {
     invokeOr<PetState>("get_pet_state", undefined, defaultPet).then(setPet);
 
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe<PetState>(EVENT_PET_STATE_CHANGED, (event) => {
       setPet(event.payload);
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
 
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, []);

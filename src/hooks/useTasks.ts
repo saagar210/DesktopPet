@@ -6,7 +6,15 @@ export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   useEffect(() => {
-    invokeOr<Task[]>("get_tasks", undefined, []).then(setTasks);
+    let cancelled = false;
+    invokeOr<Task[]>("get_tasks", undefined, []).then((value) => {
+      if (!cancelled) {
+        setTasks(value);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const addTask = useCallback(async (title: string) => {

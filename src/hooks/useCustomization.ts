@@ -6,7 +6,15 @@ export function useCustomization() {
   const [loadouts, setLoadouts] = useState<CustomizationLoadout[]>([]);
 
   useEffect(() => {
-    invokeOr<CustomizationLoadout[]>("get_customization_loadouts", undefined, []).then(setLoadouts);
+    let cancelled = false;
+    invokeOr<CustomizationLoadout[]>("get_customization_loadouts", undefined, []).then((value) => {
+      if (!cancelled) {
+        setLoadouts(value);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const saveLoadout = useCallback(async (loadout: CustomizationLoadout) => {

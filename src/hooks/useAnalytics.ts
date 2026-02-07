@@ -12,14 +12,20 @@ export function useAnalytics(days = 14) {
 
   useEffect(() => {
     refresh();
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe(EVENT_ANALYTICS_CHANGED, () => {
       refresh();
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
 
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, [refresh]);

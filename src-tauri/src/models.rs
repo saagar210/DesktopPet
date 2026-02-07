@@ -328,6 +328,65 @@ pub struct FocusGuardrailEvent {
     pub created_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct AppSnapshot {
+    pub schema_version: u32,
+    pub exported_at: String,
+    pub pet: PetState,
+    pub coins: CoinBalance,
+    pub tasks: Vec<Task>,
+    pub goals: Vec<DailyGoal>,
+    pub sessions: Vec<PomodoroSession>,
+    pub settings: Settings,
+    pub timer_runtime: TimerRuntimeState,
+    pub progress: UserProgress,
+    pub summaries: Vec<DailySummary>,
+    pub customization_loadouts: Vec<CustomizationLoadout>,
+    pub pet_events: Vec<PetEvent>,
+    pub pet_active_quest: Option<PetQuest>,
+    pub focus_guardrail_events: Vec<FocusGuardrailEvent>,
+}
+
+impl Default for AppSnapshot {
+    fn default() -> Self {
+        Self {
+            schema_version: CURRENT_SCHEMA_VERSION,
+            exported_at: chrono::Utc::now().to_rfc3339(),
+            pet: PetState::default(),
+            coins: CoinBalance::default(),
+            tasks: vec![],
+            goals: vec![],
+            sessions: vec![],
+            settings: Settings::default(),
+            timer_runtime: TimerRuntimeState::default(),
+            progress: UserProgress::default(),
+            summaries: vec![],
+            customization_loadouts: vec![],
+            pet_events: vec![],
+            pet_active_quest: None,
+            focus_guardrail_events: vec![],
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppDiagnostics {
+    pub app_version: String,
+    pub schema_version: u32,
+    pub current_schema_version: u32,
+    pub exported_at: String,
+    pub os: String,
+    pub arch: String,
+    pub tasks_count: u32,
+    pub sessions_count: u32,
+    pub summaries_count: u32,
+    pub guardrail_events_count: u32,
+    pub has_active_quest: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -336,13 +395,19 @@ mod tests {
 
     #[test]
     fn coin_balance_available() {
-        let b = CoinBalance { total: 50, spent: 20 };
+        let b = CoinBalance {
+            total: 50,
+            spent: 20,
+        };
         assert_eq!(b.available(), 30);
     }
 
     #[test]
     fn coin_balance_underflow() {
-        let b = CoinBalance { total: 5, spent: 10 };
+        let b = CoinBalance {
+            total: 5,
+            spent: 10,
+        };
         assert_eq!(b.available(), 0);
     }
 
@@ -356,19 +421,28 @@ mod tests {
 
     #[test]
     fn coin_balance_exact() {
-        let b = CoinBalance { total: 30, spent: 30 };
+        let b = CoinBalance {
+            total: 30,
+            spent: 30,
+        };
         assert_eq!(b.available(), 0);
     }
 
     #[test]
     fn coin_balance_large_values() {
-        let b = CoinBalance { total: 1_000_000, spent: 999_999 };
+        let b = CoinBalance {
+            total: 1_000_000,
+            spent: 999_999,
+        };
         assert_eq!(b.available(), 1);
     }
 
     #[test]
     fn coin_balance_serializes_camel_case() {
-        let b = CoinBalance { total: 10, spent: 5 };
+        let b = CoinBalance {
+            total: 10,
+            spent: 5,
+        };
         let json = serde_json::to_value(&b).unwrap();
         assert_eq!(json.get("total").unwrap(), 10);
         assert_eq!(json.get("spent").unwrap(), 5);
@@ -376,7 +450,10 @@ mod tests {
 
     #[test]
     fn coin_balance_roundtrip() {
-        let original = CoinBalance { total: 42, spent: 7 };
+        let original = CoinBalance {
+            total: 42,
+            spent: 7,
+        };
         let json_str = serde_json::to_string(&original).unwrap();
         let restored: CoinBalance = serde_json::from_str(&json_str).unwrap();
         assert_eq!(restored.total, original.total);
@@ -477,7 +554,8 @@ mod tests {
 
     #[test]
     fn pet_state_deserialize_legacy_payload_uses_defaults() {
-        let json = r#"{"currentStage":1,"animationState":"idle","accessories":[],"totalPomodoros":5}"#;
+        let json =
+            r#"{"currentStage":1,"animationState":"idle","accessories":[],"totalPomodoros":5}"#;
         let pet: PetState = serde_json::from_str(json).unwrap();
         assert_eq!(pet.current_stage, 1);
         assert_eq!(pet.mood, "content");
@@ -846,5 +924,36 @@ mod tests {
         assert!(json.get("matchedBlocklist").is_some());
         assert!(json.get("recommendedAction").is_some());
         assert!(json.get("createdAt").is_some());
+    }
+
+    #[test]
+    fn app_snapshot_serializes_camel_case() {
+        let snapshot = AppSnapshot::default();
+        let json = serde_json::to_value(&snapshot).unwrap();
+        assert!(json.get("schemaVersion").is_some());
+        assert!(json.get("exportedAt").is_some());
+        assert!(json.get("timerRuntime").is_some());
+        assert!(json.get("focusGuardrailEvents").is_some());
+    }
+
+    #[test]
+    fn app_diagnostics_serializes_camel_case() {
+        let diagnostics = AppDiagnostics {
+            app_version: "0.1.0".to_string(),
+            schema_version: 4,
+            current_schema_version: 4,
+            exported_at: "2026-01-01T00:00:00Z".to_string(),
+            os: "macos".to_string(),
+            arch: "aarch64".to_string(),
+            tasks_count: 1,
+            sessions_count: 2,
+            summaries_count: 3,
+            guardrail_events_count: 4,
+            has_active_quest: false,
+        };
+        let json = serde_json::to_value(&diagnostics).unwrap();
+        assert!(json.get("appVersion").is_some());
+        assert!(json.get("currentSchemaVersion").is_some());
+        assert!(json.get("guardrailEventsCount").is_some());
     }
 }

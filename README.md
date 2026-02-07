@@ -26,6 +26,7 @@ Built with [Tauri 2](https://tauri.app/), React, TypeScript, and TailwindCSS. Th
 
 ```bash
 npm install
+npm test
 npm run tauri dev
 ```
 
@@ -35,4 +36,26 @@ npm run tauri dev
 npm run tauri build
 ```
 
-Outputs a native macOS `.app` bundle to `/Applications`.
+Build artifacts are written to `src-tauri/target/release/bundle/`.
+
+## Prerequisites
+
+- Node.js 20+
+- Rust toolchain (stable)
+- Xcode Command Line Tools on macOS (`xcode-select --install`)
+
+## Verify
+
+```bash
+./scripts/verify.sh
+```
+
+## Project Docs
+
+- [Architecture](./docs/architecture.md)
+- [Security Model](./docs/security-model.md)
+- [Permission Matrix](./docs/permission-matrix.md)
+- [Debugging](./docs/debugging.md)
+- [Operations Runbook](./docs/operations.md)
+- [Release Process](./docs/release.md)
+- [Contributing](./CONTRIBUTING.md)

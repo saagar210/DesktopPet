@@ -4,15 +4,15 @@ mod models;
 mod progression;
 mod storage;
 
+use crate::events::{
+    EVENT_TRAY_SET_PRESET, EVENT_TRAY_TIMER_PAUSE, EVENT_TRAY_TIMER_RESET, EVENT_TRAY_TIMER_RESUME,
+    EVENT_TRAY_TIMER_START,
+};
 use std::sync::Mutex;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
-};
-use crate::events::{
-    EVENT_TRAY_SET_PRESET, EVENT_TRAY_TIMER_PAUSE, EVENT_TRAY_TIMER_RESET, EVENT_TRAY_TIMER_RESUME,
-    EVENT_TRAY_TIMER_START,
 };
 
 /// Guards multi-step read-modify-write operations on the store.
@@ -57,9 +57,13 @@ pub fn run() {
             commands::goals::update_goal_progress,
             commands::shop::get_shop_items,
             commands::shop::purchase_item,
+            commands::maintenance::export_app_snapshot,
+            commands::maintenance::import_app_snapshot,
+            commands::maintenance::reset_app_state,
+            commands::maintenance::get_app_diagnostics,
         ])
         .setup(|app| {
-            let _ = storage::ensure_schema_version(app.handle());
+            storage::ensure_schema_version(app.handle()).map_err(std::io::Error::other)?;
 
             // Build system tray
             let show_pet = MenuItem::with_id(app, "show_pet", "Show Pet", true, None::<&str>)?;
@@ -69,38 +73,37 @@ pub fn run() {
                 MenuItem::with_id(app, "start_pomodoro", "Start Pomodoro", true, None::<&str>)?;
             let pause_pomo =
                 MenuItem::with_id(app, "pause_pomodoro", "Pause Pomodoro", true, None::<&str>)?;
-            let resume_pomo =
-                MenuItem::with_id(app, "resume_pomodoro", "Resume Pomodoro", true, None::<&str>)?;
+            let resume_pomo = MenuItem::with_id(
+                app,
+                "resume_pomodoro",
+                "Resume Pomodoro",
+                true,
+                None::<&str>,
+            )?;
             let reset_pomo =
                 MenuItem::with_id(app, "reset_pomodoro", "Reset Pomodoro", true, None::<&str>)?;
             let preset_short =
                 MenuItem::with_id(app, "preset_short", "Preset: 15 / 5", true, None::<&str>)?;
-            let preset_standard = MenuItem::with_id(
-                app,
-                "preset_standard",
-                "Preset: 25 / 5",
-                true,
-                None::<&str>,
-            )?;
+            let preset_standard =
+                MenuItem::with_id(app, "preset_standard", "Preset: 25 / 5", true, None::<&str>)?;
             let preset_long =
                 MenuItem::with_id(app, "preset_long", "Preset: 50 / 10", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu =
-                Menu::with_items(
-                    app,
-                    &[
-                        &show_pet,
-                        &show_panel,
-                        &start_pomo,
-                        &pause_pomo,
-                        &resume_pomo,
-                        &reset_pomo,
-                        &preset_short,
-                        &preset_standard,
-                        &preset_long,
-                        &quit,
-                    ],
-                )?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &show_pet,
+                    &show_panel,
+                    &start_pomo,
+                    &pause_pomo,
+                    &resume_pomo,
+                    &reset_pomo,
+                    &preset_short,
+                    &preset_standard,
+                    &preset_long,
+                    &quit,
+                ],
+            )?;
 
             let _tray = TrayIconBuilder::new()
                 .tooltip("Desktop Pet")
