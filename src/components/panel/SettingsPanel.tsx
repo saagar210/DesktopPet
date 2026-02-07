@@ -8,7 +8,7 @@ import type {
   Settings,
 } from "../../store/types";
 
-interface Props {
+export interface SettingsPanelProps {
   preset: TimerPreset;
   settings: Settings;
   onSetPreset: (p: TimerPreset) => void;
@@ -52,7 +52,7 @@ export function SettingsPanel({
   guardrailStatus,
   guardrailEvents,
   disabled,
-}: Props) {
+}: SettingsPanelProps) {
   const presets = Object.entries(TIMER_PRESETS) as [TimerPreset, (typeof TIMER_PRESETS)[TimerPreset]][];
   const [hostPreview, setHostPreview] = useState(settings.focusBlocklist.join(", "));
   const [opsMessage, setOpsMessage] = useState<string | null>(null);
