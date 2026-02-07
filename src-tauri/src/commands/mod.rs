@@ -2,6 +2,7 @@ pub mod coins;
 pub mod customization;
 pub mod focus_guardrails;
 pub mod goals;
+pub mod maintenance;
 pub mod pet;
 pub mod pomodoro;
 pub mod progress;

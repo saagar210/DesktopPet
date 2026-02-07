@@ -1,7 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TIMER_PRESETS } from "../../lib/constants";
 import type { TimerPreset } from "../../lib/constants";
-import type { FocusGuardrailEvent, FocusGuardrailsStatus, Settings } from "../../store/types";
+import type {
+  AppDiagnostics,
+  FocusGuardrailEvent,
+  FocusGuardrailsStatus,
+  Settings,
+} from "../../store/types";
 
 interface Props {
   preset: TimerPreset;
@@ -16,10 +21,16 @@ interface Props {
   onSetFocusBlocklist: (hosts: string[]) => void;
   onEvaluateGuardrails: (phase: string, hosts: string[]) => void;
   onInterveneGuardrails: (phase: string, hosts: string[]) => void;
+  onExportData: () => Promise<string>;
+  onImportData: (rawJson: string) => Promise<string>;
+  onResetData: () => Promise<string>;
+  onGetDiagnostics: () => Promise<AppDiagnostics | null>;
   guardrailStatus: FocusGuardrailsStatus | null;
   guardrailEvents: FocusGuardrailEvent[];
   disabled: boolean;
 }
+
+const MAX_BACKUP_IMPORT_BYTES = 5 * 1024 * 1024;
 
 export function SettingsPanel({
   preset,
@@ -34,16 +45,35 @@ export function SettingsPanel({
   onSetFocusBlocklist,
   onEvaluateGuardrails,
   onInterveneGuardrails,
+  onExportData,
+  onImportData,
+  onResetData,
+  onGetDiagnostics,
   guardrailStatus,
   guardrailEvents,
   disabled,
 }: Props) {
   const presets = Object.entries(TIMER_PRESETS) as [TimerPreset, (typeof TIMER_PRESETS)[TimerPreset]][];
   const [hostPreview, setHostPreview] = useState(settings.focusBlocklist.join(", "));
+  const [opsMessage, setOpsMessage] = useState<string | null>(null);
+  const [opsBusy, setOpsBusy] = useState(false);
+  const importFileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setHostPreview(settings.focusBlocklist.join(", "));
   }, [settings.focusBlocklist]);
+
+  const runDataOperation = async (operation: () => Promise<string>) => {
+    setOpsBusy(true);
+    try {
+      const message = await operation();
+      setOpsMessage(message);
+    } catch {
+      setOpsMessage("Operation failed. Please try again.");
+    } finally {
+      setOpsBusy(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -252,6 +282,99 @@ export function SettingsPanel({
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="pt-2 border-t flex flex-col gap-3" style={{ borderColor: "var(--border-color)" }}>
+        <h3 className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>
+          Data & Diagnostics
+        </h3>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-40"
+            style={{ backgroundColor: "var(--accent-color)" }}
+            disabled={opsBusy}
+            onClick={() => runDataOperation(onExportData)}
+          >
+            Export Backup
+          </button>
+          <button
+            className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-40"
+            style={{ backgroundColor: "color-mix(in srgb, var(--accent-color) 75%, #0ea5e9)" }}
+            disabled={opsBusy}
+            onClick={() => importFileRef.current?.click()}
+          >
+            Import Backup
+          </button>
+          <button
+            className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-40"
+            style={{ backgroundColor: "#b91c1c" }}
+            disabled={opsBusy}
+            onClick={() => {
+              if (!window.confirm("Reset all local app data? This cannot be undone.")) {
+                return;
+              }
+              void runDataOperation(onResetData);
+            }}
+          >
+            Reset App Data
+          </button>
+          <button
+            className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-40"
+            style={{ backgroundColor: "color-mix(in srgb, var(--accent-color) 65%, #4b5563)" }}
+            disabled={opsBusy}
+            onClick={() =>
+              void runDataOperation(async () => {
+                const diagnostics = await onGetDiagnostics();
+                if (!diagnostics) {
+                  return "Unable to load diagnostics";
+                }
+                const payload = JSON.stringify(diagnostics, null, 2);
+                if (navigator.clipboard?.writeText) {
+                  try {
+                    await navigator.clipboard.writeText(payload);
+                    return "Diagnostics copied to clipboard";
+                  } catch {
+                    return `Clipboard write blocked. Diagnostics: ${payload}`;
+                  }
+                }
+                return `Clipboard unavailable. Diagnostics: ${payload}`;
+              })
+            }
+          >
+            Copy Diagnostics
+          </button>
+        </div>
+        <input
+          ref={importFileRef}
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
+              return;
+            }
+            if (file.size > MAX_BACKUP_IMPORT_BYTES) {
+              setOpsMessage("Import failed: backup file is larger than 5 MB");
+              event.currentTarget.value = "";
+              return;
+            }
+            void runDataOperation(async () => onImportData(await file.text()));
+            event.currentTarget.value = "";
+          }}
+        />
+        {opsMessage && (
+          <div
+            className="text-xs border rounded-md px-2 py-1"
+            style={{
+              color: "var(--text-color)",
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            {opsMessage}
           </div>
         )}
       </div>

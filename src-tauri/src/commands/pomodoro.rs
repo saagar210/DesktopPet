@@ -8,14 +8,30 @@ use crate::models::{CoinBalance, PetState, PomodoroSession, UserProgress};
 const COINS_PER_POMODORO: u32 = 10;
 const STAGE_1_THRESHOLD: u32 = 5;
 const STAGE_2_THRESHOLD: u32 = 15;
+const MIN_WORK_DURATION_SECS: u32 = 5 * 60;
+const MAX_WORK_DURATION_SECS: u32 = 2 * 60 * 60;
+const MIN_BREAK_DURATION_SECS: u32 = 60;
+const MAX_BREAK_DURATION_SECS: u32 = 30 * 60;
+
+fn clamp_work_duration(seconds: u32) -> u32 {
+    seconds.clamp(MIN_WORK_DURATION_SECS, MAX_WORK_DURATION_SECS)
+}
+
+fn clamp_break_duration(seconds: u32) -> u32 {
+    seconds.clamp(MIN_BREAK_DURATION_SECS, MAX_BREAK_DURATION_SECS)
+}
 
 #[tauri::command]
 pub fn start_pomodoro(
     app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
     work_duration: u32,
     break_duration: u32,
 ) -> Result<PomodoroSession, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let store = app.store("store.json").map_err(|e| e.to_string())?;
+    let work_duration = clamp_work_duration(work_duration);
+    let break_duration = clamp_break_duration(break_duration);
 
     let session = PomodoroSession {
         id: uuid::Uuid::new_v4().to_string(),
@@ -57,11 +73,15 @@ pub fn complete_pomodoro(
         .get("sessions")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
-    let mut completed_work_duration = 25 * 60;
-    if let Some(s) = sessions.iter_mut().find(|s| s.id == session_id) {
-        s.completed_at = Some(chrono::Utc::now().to_rfc3339());
-        completed_work_duration = s.work_duration;
+    let session = sessions
+        .iter_mut()
+        .find(|s| s.id == session_id)
+        .ok_or_else(|| "Session not found".to_string())?;
+    if session.completed_at.is_some() {
+        return Err("Session already completed".to_string());
     }
+    session.completed_at = Some(chrono::Utc::now().to_rfc3339());
+    let completed_work_duration = session.work_duration;
     store.set("sessions", json!(sessions));
 
     // Award coins
@@ -121,8 +141,13 @@ pub fn complete_pomodoro(
 
     // Update daily goal for pomodoros
     let _ = crate::commands::goals::increment_goal_progress(&app, "pomodoros");
-    let _ = crate::commands::goals::add_goal_progress(&app, "focus_minutes", completed_work_duration / 60);
-    let _ = crate::progression::record_focus_session(&app, completed_work_duration, COINS_PER_POMODORO);
+    let _ = crate::commands::goals::add_goal_progress(
+        &app,
+        "focus_minutes",
+        completed_work_duration / 60,
+    );
+    let _ =
+        crate::progression::record_focus_session(&app, completed_work_duration, COINS_PER_POMODORO);
     let _ = crate::commands::pet::advance_focus_quest(&app, 1);
 
     Ok(pet)
@@ -150,6 +175,20 @@ mod tests {
     #[test]
     fn coins_per_pomodoro_is_10() {
         assert_eq!(COINS_PER_POMODORO, 10);
+    }
+
+    #[test]
+    fn work_duration_is_clamped() {
+        assert_eq!(clamp_work_duration(60), MIN_WORK_DURATION_SECS);
+        assert_eq!(clamp_work_duration(25 * 60), 25 * 60);
+        assert_eq!(clamp_work_duration(24 * 60 * 60), MAX_WORK_DURATION_SECS);
+    }
+
+    #[test]
+    fn break_duration_is_clamped() {
+        assert_eq!(clamp_break_duration(0), MIN_BREAK_DURATION_SECS);
+        assert_eq!(clamp_break_duration(5 * 60), 5 * 60);
+        assert_eq!(clamp_break_duration(3 * 60 * 60), MAX_BREAK_DURATION_SECS);
     }
 
     #[test]

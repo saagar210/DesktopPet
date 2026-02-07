@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { SHOP_ITEMS } from "../../lib/constants";
 import type { ShopItemId } from "../../lib/constants";
+import { invokeMaybe } from "../../lib/tauri";
 import { CoinBadge } from "../shared/CoinBadge";
 
 interface Props {
@@ -9,12 +9,8 @@ interface Props {
 }
 
 export function ShopPanel({ available, ownedAccessories }: Props) {
-  const handleBuy = async (itemId: string) => {
-    try {
-      await invoke("purchase_item", { itemId });
-    } catch (e) {
-      console.error("Purchase failed:", e);
-    }
+  const handleBuy = async (itemId: ShopItemId) => {
+    await invokeMaybe("purchase_item", { itemId });
   };
 
   return (

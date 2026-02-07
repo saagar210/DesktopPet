@@ -9,14 +9,20 @@ export function useCoins() {
   useEffect(() => {
     invokeOr<CoinBalance>("get_coin_balance", undefined, { total: 0, spent: 0 }).then(setCoins);
 
+    let cancelled = false;
     let unlisten = () => {};
     listenSafe<CoinBalance>(EVENT_COINS_CHANGED, (event) => {
       setCoins(event.payload);
     }).then((fn) => {
+      if (cancelled) {
+        fn();
+        return;
+      }
       unlisten = fn;
     });
 
     return () => {
+      cancelled = true;
       unlisten();
     };
   }, []);
