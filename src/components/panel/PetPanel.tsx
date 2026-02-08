@@ -5,10 +5,11 @@ interface Props {
   pet: PetState;
   events: PetEvent[];
   activeQuest: PetQuest | null;
+  rollFeedback: PetEvent | null;
   interactionVerbs: Array<{ id: string; label: string }>;
   onInteract: (action: string) => void;
   onCaptureCard: () => Promise<string>;
-  onRollEvent: () => void;
+  onRollEvent: () => Promise<PetEvent | null>;
   onResolveEvent: (eventId: string) => void;
 }
 
@@ -40,6 +41,7 @@ export function PetPanel({
   pet,
   events,
   activeQuest,
+  rollFeedback,
   interactionVerbs,
   onInteract,
   onCaptureCard,
@@ -47,6 +49,7 @@ export function PetPanel({
   onResolveEvent,
 }: Props) {
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
+  const [rollingQuest, setRollingQuest] = useState(false);
 
   return (
     <div className="flex flex-col gap-4">
@@ -134,13 +137,35 @@ export function PetPanel({
           <h3 className="font-medium" style={{ color: "var(--text-color)" }}>Events</h3>
           <button
             type="button"
-            onClick={onRollEvent}
+            onClick={() => {
+              if (rollingQuest) {
+                return;
+              }
+              setRollingQuest(true);
+              void onRollEvent().finally(() => {
+                setRollingQuest(false);
+              });
+            }}
+            disabled={rollingQuest}
             className="text-xs px-2 py-1 rounded transition-colors hover:opacity-80"
             style={{ backgroundColor: "var(--accent-soft)", color: "var(--accent-color)" }}
           >
-            New Quest
+            {rollingQuest ? "Checking..." : "New Quest"}
           </button>
         </div>
+        {rollFeedback && (
+          <div
+            aria-live="polite"
+            className="mb-3 text-xs border rounded-md px-2 py-1"
+            style={{
+              color: "var(--muted-color)",
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--panel-bg)",
+            }}
+          >
+            {rollFeedback.description}
+          </div>
+        )}
         {events.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--muted-color)" }}>No active events</p>
         ) : (
