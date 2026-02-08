@@ -117,7 +117,7 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Stop if New Quest can emit multiple rapid requests.
 - Go only when `PetPanel.smoke` covers cooldown feedback + button throttle.
 
-### Iteration B (next): Accessory-linked Progression Moments
+### Iteration B (completed): Accessory-linked Progression Moments
 - Deliverables
 - Extend quest catalog weights by stage and recent behavior (focus/care mix).
 - Accessory metadata hooks for tiny quest-related micro-behavior accents.

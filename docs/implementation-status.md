@@ -13,7 +13,8 @@ This repository has completed the following hardening phases:
 - Phase 8: behavior composer + accessory personality layer
 - Phase 9: progression 2.0 (in progress)
   - Iteration A complete: calm quest scheduler + anti-nag cooldown + quiet feedback surfaced in pet panel.
-  - Remaining: Iteration B (quest catalog + accessory behavior links), Iteration C (seasonal pack polish + acceptance QA).
+  - Iteration B complete: weighted quest selection + accessory quest accents + photo booth v2 themes.
+  - Remaining: Iteration C (seasonal pack polish + acceptance QA).
 
 See supporting docs in `/docs` for implementation details.
 
