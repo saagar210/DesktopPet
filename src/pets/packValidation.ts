@@ -5,6 +5,7 @@ export interface PackValidationCheck {
   label: string;
   pass: boolean;
   detail: string;
+  remediation: string;
 }
 
 export interface PackValidationResult {
@@ -29,6 +30,8 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
     label: "Valid species id slug",
     pass: isSlug(pack.id),
     detail: pack.id,
+    remediation:
+      "Use lowercase letters, numbers, underscores, or hyphens only (example: my_pet).",
   });
 
   checks.push({
@@ -36,6 +39,7 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
     label: "Exactly 3 stage names",
     pass: pack.stageNames.length === 3,
     detail: `${pack.stageNames.length} names`,
+    remediation: "Define exactly three names to map to baby, teen, and adult stages.",
   });
 
   const thresholds = pack.evolutionThresholds;
@@ -49,6 +53,8 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
     label: "Valid ascending evolution thresholds",
     pass: thresholdsValid,
     detail: thresholds.join(" / "),
+    remediation:
+      "Set thresholds to [0, mid, final] where mid >= 1 and final > mid.",
   });
 
   const spriteChecks = pack.stageSprites.every(
@@ -59,6 +65,7 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
     label: "3 stage sprites resolved with supported format",
     pass: spriteChecks && pack.stageSprites.length === 3,
     detail: `${pack.stageSprites.length} sprite assets`,
+    remediation: "Provide one non-empty svg/png/webp sprite path for each stage.",
   });
 
   checks.push({
@@ -68,6 +75,8 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
       pack.idleBehavior.blinkIntervalMs[0] >= 1200 &&
       pack.idleBehavior.blinkIntervalMs[1] > pack.idleBehavior.blinkIntervalMs[0],
     detail: `${pack.idleBehavior.blinkIntervalMs[0]}-${pack.idleBehavior.blinkIntervalMs[1]}ms`,
+    remediation:
+      "Use subtle blink intervals with min >= 1200ms and max greater than min.",
   });
 
   const anchors = pack.accessoryAnchors;
@@ -80,6 +89,8 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
       anchorInBounds(anchors.left) &&
       anchorInBounds(anchors.right),
     detail: "head/neck/left/right",
+    remediation:
+      "Keep all anchor points between 0 and 200 on both axes so accessories render safely.",
   });
 
   const verbs = new Set(pack.interactionVerbs.map((verb) => verb.id));
@@ -94,6 +105,8 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
       verbs.has("clean") &&
       verbs.has("train"),
     detail: `${verbs.size} verbs`,
+    remediation:
+      "Include these verbs in interactionVerbs: pet, feed, play, nap, clean, train.",
   });
 
   return {

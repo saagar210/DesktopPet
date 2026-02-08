@@ -228,8 +228,20 @@ export function CustomizationPanel({
                 </div>
                 <div className="mt-2 grid grid-cols-1 gap-1">
                   {result.checks.map((check) => (
-                    <div key={check.id} className="text-[11px]" style={{ color: "var(--muted-color)" }}>
-                      {check.pass ? "PASS" : "FAIL"} {check.label}
+                    <div
+                      key={check.id}
+                      className="rounded-sm border px-2 py-1 text-[11px]"
+                      style={{ borderColor: "var(--border-color)" }}
+                    >
+                      <div style={{ color: check.pass ? "#16a34a" : "#dc2626" }}>
+                        {check.pass ? "PASS" : "FAIL"} {check.label}
+                      </div>
+                      <div style={{ color: "var(--muted-color)" }}>Observed: {check.detail}</div>
+                      {!check.pass && (
+                        <div style={{ color: "var(--muted-color)" }}>
+                          Fix: {check.remediation}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
