@@ -60,7 +60,7 @@ export function ControlPanel() {
   const { status: guardrailStatus, events: guardrailEvents, evaluate, intervene } = useFocusGuardrails();
   const { progress } = useProgress();
   const { summaries } = useAnalytics();
-  const { events: petEvents, activeQuest, rollEvent, resolveEvent } = usePetEvents();
+  const { events: petEvents, activeQuest, rollFeedback, rollEvent, resolveEvent } = usePetEvents();
   useContextAwareChill(settings, guardrailStatus);
   const theme = getThemeTokens(settings.uiTheme);
   
@@ -179,6 +179,7 @@ export function ControlPanel() {
             pet={pet}
             events={petEvents}
             activeQuest={activeQuest}
+            rollFeedback={rollFeedback}
             interactionVerbs={species.interactionVerbs}
             onInteract={interact}
             onCaptureCard={async () => {

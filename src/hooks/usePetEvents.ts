@@ -5,6 +5,7 @@ import type { PetEvent, PetQuest } from "../store/types";
 export function usePetEvents() {
   const [events, setEvents] = useState<PetEvent[]>([]);
   const [activeQuest, setActiveQuest] = useState<PetQuest | null>(null);
+  const [rollFeedback, setRollFeedback] = useState<PetEvent | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -33,7 +34,13 @@ export function usePetEvents() {
   const rollEvent = useCallback(async () => {
     const event = await invokeMaybe<PetEvent>("roll_pet_event");
     if (!event) return null;
-    refresh();
+    if (!mounted.current) {
+      return event;
+    }
+    setRollFeedback(event);
+    if (event.kind !== "quiet") {
+      refresh();
+    }
     return event;
   }, [refresh]);
 
@@ -44,5 +51,5 @@ export function usePetEvents() {
     return updated;
   }, [events]);
 
-  return { events, activeQuest, refresh, rollEvent, resolveEvent };
+  return { events, activeQuest, rollFeedback, refresh, rollEvent, resolveEvent };
 }

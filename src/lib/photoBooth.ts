@@ -10,6 +10,148 @@ interface PetCardInput {
   settings: Settings;
 }
 
+interface PetCardTheme {
+  id: string;
+  name: string;
+  gradientStart: string;
+  gradientEnd: string;
+  panelFill: string;
+  titleColor: string;
+  subtitleColor: string;
+  statColor: string;
+  footerColor: string;
+}
+
+const PHOTO_CARD_THEMES: Record<string, PetCardTheme> = {
+  "cat:cozy_room": {
+    id: "cat-cozy-night",
+    name: "Cozy Night",
+    gradientStart: "#fff7ed",
+    gradientEnd: "#ede9fe",
+    panelFill: "rgba(255, 255, 255, 0.9)",
+    titleColor: "#3f3b63",
+    subtitleColor: "#625f83",
+    statColor: "#2e2d4d",
+    footerColor: "#7c7aa0",
+  },
+  "corgi:meadow": {
+    id: "corgi-sunburst",
+    name: "Sunburst Meadow",
+    gradientStart: "#fef3c7",
+    gradientEnd: "#dcfce7",
+    panelFill: "rgba(255, 255, 255, 0.88)",
+    titleColor: "#7c3b12",
+    subtitleColor: "#93521f",
+    statColor: "#4a2a10",
+    footerColor: "#8b5b35",
+  },
+  "axolotl:space": {
+    id: "axolotl-lumen",
+    name: "Lumen Drift",
+    gradientStart: "#ecfeff",
+    gradientEnd: "#dbeafe",
+    panelFill: "rgba(246, 255, 255, 0.9)",
+    titleColor: "#155e75",
+    subtitleColor: "#0f766e",
+    statColor: "#164e63",
+    footerColor: "#0f766e",
+  },
+  "penguin:space": {
+    id: "penguin-aurora",
+    name: "Aurora Calm",
+    gradientStart: "#eef2ff",
+    gradientEnd: "#dbeafe",
+    panelFill: "rgba(246, 248, 255, 0.9)",
+    titleColor: "#1e3a8a",
+    subtitleColor: "#334155",
+    statColor: "#0f172a",
+    footerColor: "#475569",
+  },
+};
+
+const SPECIES_FALLBACK_THEME: Record<string, PetCardTheme> = {
+  cat: {
+    id: "cat-soft",
+    name: "Soft Purr",
+    gradientStart: "#fff7ed",
+    gradientEnd: "#f5f3ff",
+    panelFill: "rgba(255, 255, 255, 0.9)",
+    titleColor: "#4c1d95",
+    subtitleColor: "#6d28d9",
+    statColor: "#312e81",
+    footerColor: "#6b7280",
+  },
+  corgi: {
+    id: "corgi-warm",
+    name: "Warm Loaf",
+    gradientStart: "#fff7ed",
+    gradientEnd: "#fef3c7",
+    panelFill: "rgba(255, 255, 255, 0.89)",
+    titleColor: "#9a3412",
+    subtitleColor: "#b45309",
+    statColor: "#7c2d12",
+    footerColor: "#7c5a3b",
+  },
+  axolotl: {
+    id: "axolotl-water",
+    name: "Water Bloom",
+    gradientStart: "#ecfeff",
+    gradientEnd: "#e0f2fe",
+    panelFill: "rgba(247, 255, 255, 0.9)",
+    titleColor: "#0e7490",
+    subtitleColor: "#0891b2",
+    statColor: "#155e75",
+    footerColor: "#0f766e",
+  },
+  penguin: {
+    id: "penguin-calm",
+    name: "Calm Frost",
+    gradientStart: "#f8fafc",
+    gradientEnd: "#dbeafe",
+    panelFill: "rgba(255, 255, 255, 0.88)",
+    titleColor: "#1e293b",
+    subtitleColor: "#334155",
+    statColor: "#0f172a",
+    footerColor: "#64748b",
+  },
+};
+
+const DEFAULT_THEME: PetCardTheme = {
+  id: "default-calm",
+  name: "Calm Classic",
+  gradientStart: "#fef9f2",
+  gradientEnd: "#e0f2fe",
+  panelFill: "rgba(255, 255, 255, 0.86)",
+  titleColor: "#1f2937",
+  subtitleColor: "#475569",
+  statColor: "#0f172a",
+  footerColor: "#64748b",
+};
+
+export function resolvePetCardTheme(input: Pick<PetCardInput, "pet" | "species" | "settings">) {
+  const key = `${input.species.id}:${input.settings.petScene}`;
+  let theme =
+    PHOTO_CARD_THEMES[key] ??
+    SPECIES_FALLBACK_THEME[input.species.id] ??
+    DEFAULT_THEME;
+  if (input.settings.petSkin === "neon") {
+    theme = {
+      ...theme,
+      titleColor: "#0f172a",
+      subtitleColor: "#1d4ed8",
+      statColor: "#0f172a",
+    };
+  }
+  if (input.settings.petSkin === "plush") {
+    theme = {
+      ...theme,
+      panelFill: "rgba(255, 255, 255, 0.93)",
+      footerColor: "#6b7280",
+    };
+  }
+  return theme;
+}
+
 function roundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -49,29 +191,31 @@ export async function downloadPetCard(input: PetCardInput) {
     throw new Error("Canvas context unavailable");
   }
 
+  const theme = resolvePetCardTheme(input);
   const bg = ctx.createLinearGradient(0, 0, 960, 540);
-  bg.addColorStop(0, "#fef9f2");
-  bg.addColorStop(1, "#e0f2fe");
+  bg.addColorStop(0, theme.gradientStart);
+  bg.addColorStop(1, theme.gradientEnd);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, 960, 540);
 
   roundedRect(ctx, 44, 44, 872, 452, 28);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.86)";
+  ctx.fillStyle = theme.panelFill;
   ctx.fill();
 
-  ctx.fillStyle = "#1f2937";
+  ctx.fillStyle = theme.titleColor;
   ctx.font = "700 38px 'Avenir Next', 'Segoe UI', sans-serif";
   ctx.fillText(`${input.species.name} Pet Card`, 82, 110);
   ctx.font = "500 22px 'Avenir Next', 'Segoe UI', sans-serif";
-  ctx.fillStyle = "#475569";
+  ctx.fillStyle = theme.subtitleColor;
   ctx.fillText(`Stage: ${input.stageName}   Mood: ${input.pet.mood}`, 82, 148);
+  ctx.fillText(`Theme: ${theme.name}`, 82, 176);
 
   const sprite = await loadImage(
     input.species.stageSprites[Math.max(0, Math.min(2, input.pet.currentStage))]
   );
-  ctx.drawImage(sprite, 88, 176, 250, 250);
+  ctx.drawImage(sprite, 88, 198, 250, 250);
 
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = theme.statColor;
   ctx.font = "600 24px 'Avenir Next', 'Segoe UI', sans-serif";
   ctx.fillText(`Coins: ${input.coinsAvailable}`, 390, 216);
   ctx.fillText(`Level: ${input.progress.level}`, 390, 258);
@@ -81,7 +225,7 @@ export async function downloadPetCard(input: PetCardInput) {
   ctx.fillText(`Loadout: ${input.settings.petSkin} / ${input.settings.petScene}`, 390, 426);
 
   ctx.font = "500 16px 'Avenir Next', 'Segoe UI', sans-serif";
-  ctx.fillStyle = "#64748b";
+  ctx.fillStyle = theme.footerColor;
   ctx.fillText("Generated in DesktopPet Photo Booth", 82, 478);
   ctx.fillText(new Date().toLocaleString(), 690, 478);
 

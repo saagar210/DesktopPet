@@ -202,6 +202,16 @@
   50% { filter: saturate(1.12); }
 }
 
+@keyframes quest-accent-soft-glow {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50% { filter: saturate(1.06) brightness(1.03); }
+}
+
+@keyframes quest-accent-soft-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(0.9deg); }
+}
+
 .behavior-scarf {
   animation-name: idle-bounce, accessory-scarf-warmth;
   animation-duration: 2.4s, 6s;
@@ -241,4 +251,29 @@
   animation-duration: 2.8s, 5.1s;
   animation-timing-function: ease-in-out, ease-in-out;
   animation-iteration-count: infinite, infinite;
+}
+
+.quest-accent-partyhat {
+  transform-origin: center top;
+  animation-name: accessory-partyhat-bop, quest-accent-soft-glow;
+  animation-duration: 7.2s, 9.4s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.quest-accent-bowtie {
+  transform-origin: center;
+  animation-name: quest-accent-soft-tilt, quest-accent-soft-glow;
+  animation-duration: 8.2s, 10.2s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.quest-accent-scarf,
+.quest-accent-sunglasses,
+.quest-accent-snack {
+  animation-name: quest-accent-soft-glow;
+  animation-duration: 8.8s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
