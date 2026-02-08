@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Corgi stage 2">
+  <ellipse cx="100" cy="124" rx="66" ry="55" fill="#e9a45d"/>
+  <ellipse cx="100" cy="130" rx="42" ry="38" fill="#ffe1b8"/>
+  <ellipse cx="70" cy="82" rx="20" ry="26" fill="#e9a45d" transform="rotate(-15 70 82)"/>
+  <ellipse cx="130" cy="82" rx="20" ry="26" fill="#e9a45d" transform="rotate(15 130 82)"/>
+  <ellipse cx="82" cy="100" rx="11.5" ry="12" fill="#fff"/>
+  <ellipse cx="118" cy="100" rx="11.5" ry="12" fill="#fff"/>
+  <ellipse cx="84" cy="102" rx="6.5" ry="7" fill="#332422"/>
+  <ellipse cx="120" cy="102" rx="6.5" ry="7" fill="#332422"/>
+  <ellipse cx="100" cy="118" rx="11" ry="8.5" fill="#4a322a"/>
+  <path d="M87 127 Q100 139 113 127" stroke="#4a322a" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <rect x="56" y="158" width="22" height="24" rx="8" fill="#d7934f"/>
+  <rect x="122" y="158" width="22" height="24" rx="8" fill="#d7934f"/>
+  <path d="M154 138 Q176 140 176 126" stroke="#f0bf83" stroke-width="9" fill="none" stroke-linecap="round"/>
+</svg>

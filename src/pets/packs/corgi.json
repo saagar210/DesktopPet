@@ -1,0 +1,26 @@
+{
+  "id": "corgi",
+  "name": "Corgi",
+  "description": "A tiny loaf dog with subtle tail wags and encouraging vibes.",
+  "stageNames": ["Pup", "Loaf", "Sun Corgi"],
+  "evolutionThresholds": [0, 6, 16],
+  "idleBehavior": {
+    "baseAnimation": "bounce",
+    "blinkIntervalMs": [3000, 5800]
+  },
+  "interactionVerbs": [
+    { "id": "pet", "label": "Pat" },
+    { "id": "feed", "label": "Biscuit" },
+    { "id": "play", "label": "Fetch" },
+    { "id": "nap", "label": "Nap" },
+    { "id": "clean", "label": "Brush" },
+    { "id": "train", "label": "Heel" }
+  ],
+  "stageSpriteFiles": ["corgi-stage-0.svg", "corgi-stage-1.svg", "corgi-stage-2.svg"],
+  "accessoryAnchors": {
+    "head": { "x": 100, "y": 38 },
+    "neck": { "x": 100, "y": 108 },
+    "left": { "x": 46, "y": 118 },
+    "right": { "x": 154, "y": 118 }
+  }
+}

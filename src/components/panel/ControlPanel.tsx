@@ -10,7 +10,9 @@ import { useFocusGuardrails } from "../../hooks/useFocusGuardrails";
 import { useProgress } from "../../hooks/useProgress";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { usePetEvents } from "../../hooks/usePetEvents";
+import { useContextAwareChill } from "../../hooks/useContextAwareChill";
 import { getThemeTokens } from "../../lib/themes";
+import { downloadPetCard } from "../../lib/photoBooth";
 import { invokeMaybe } from "../../lib/tauri";
 import type { AppDiagnostics, AppSnapshot } from "../../store/types";
 import { TimerDisplay } from "./TimerDisplay";
@@ -39,7 +41,17 @@ const TABS: { id: Tab; label: string }[] = [
 export function ControlPanel() {
   const [tab, setTab] = useState<Tab>("timer");
   const pomo = usePomodoro();
-  const { pet, stageName, progressToNext, stageProgress, stageSpan, setCustomization, interact } = usePet();
+  const {
+    pet,
+    species,
+    stageName,
+    progressToNext,
+    stageProgress,
+    stageSpan,
+    setCustomization,
+    setSpecies,
+    interact,
+  } = usePet();
   const { available } = useCoins();
   const { goals } = useGoals();
   const { tasks, addTask, toggleTask, deleteTask } = useTasks();
@@ -49,6 +61,7 @@ export function ControlPanel() {
   const { progress } = useProgress();
   const { summaries } = useAnalytics();
   const { events: petEvents, activeQuest, rollEvent, resolveEvent } = usePetEvents();
+  useContextAwareChill(settings, guardrailStatus);
   const theme = getThemeTokens(settings.uiTheme);
   
   const exportData = async () => {
@@ -166,7 +179,19 @@ export function ControlPanel() {
             pet={pet}
             events={petEvents}
             activeQuest={activeQuest}
+            interactionVerbs={species.interactionVerbs}
             onInteract={interact}
+            onCaptureCard={async () => {
+              await downloadPetCard({
+                pet,
+                species,
+                stageName,
+                coinsAvailable: available,
+                progress,
+                settings,
+              });
+              return "Pet card saved.";
+            }}
             onRollEvent={rollEvent}
             onResolveEvent={resolveEvent}
           />
@@ -200,6 +225,9 @@ export function ControlPanel() {
             onSetPetCustomization={(skin, scene) => {
               void setCustomization(skin, scene);
             }}
+            onSetPetSpecies={(speciesId, thresholds) => {
+              void setSpecies(speciesId, thresholds);
+            }}
             onSaveLoadout={(loadout) => {
               void saveLoadout(loadout);
             }}
@@ -216,11 +244,47 @@ export function ControlPanel() {
             onSetNotificationsEnabled={(enabled) =>
               void updateSettings({ notificationsEnabled: enabled })
             }
+            onSetToastNotificationsEnabled={(enabled) =>
+              void updateSettings({ toastNotificationsEnabled: enabled })
+            }
+            onSetTrayBadgeEnabled={(enabled) =>
+              void updateSettings({ trayBadgeEnabled: enabled })
+            }
+            onSetNotificationWhitelist={(events) =>
+              void updateSettings({ notificationWhitelist: events })
+            }
             onSetSoundsEnabled={(enabled) =>
               void updateSettings({ soundsEnabled: enabled })
             }
             onSetSoundVolume={(volume) =>
               void updateSettings({ soundVolume: volume })
+            }
+            onSetQuietModeEnabled={(enabled) =>
+              void updateSettings({ quietModeEnabled: enabled })
+            }
+            onSetFocusModeEnabled={(enabled) =>
+              void updateSettings({ focusModeEnabled: enabled })
+            }
+            onSetAnimationBudget={(budget) =>
+              void updateSettings({ animationBudget: budget })
+            }
+            onSetContextAwareChillEnabled={(enabled) =>
+              void updateSettings({ contextAwareChillEnabled: enabled })
+            }
+            onSetChillOnFullscreen={(enabled) =>
+              void updateSettings({ chillOnFullscreen: enabled })
+            }
+            onSetChillOnMeetings={(enabled) =>
+              void updateSettings({ chillOnMeetings: enabled })
+            }
+            onSetChillOnHeavyTyping={(enabled) =>
+              void updateSettings({ chillOnHeavyTyping: enabled })
+            }
+            onSetMeetingHosts={(hosts) =>
+              void updateSettings({ meetingHosts: hosts })
+            }
+            onSetHeavyTypingThresholdCpm={(threshold) =>
+              void updateSettings({ heavyTypingThresholdCpm: threshold })
             }
             onSetFocusGuardrailsEnabled={(enabled) =>
               void updateSettings({ focusGuardrailsEnabled: enabled })

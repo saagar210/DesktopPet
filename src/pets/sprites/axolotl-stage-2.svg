@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Axolotl stage 3">
+  <ellipse cx="100" cy="125" rx="67" ry="56" fill="#ff9fbf"/>
+  <ellipse cx="100" cy="131" rx="42" ry="36" fill="#ffd3e2"/>
+  <ellipse cx="50" cy="96" rx="20" ry="10" fill="#ff6c9d" transform="rotate(-23 50 96)"/>
+  <ellipse cx="150" cy="96" rx="20" ry="10" fill="#ff6c9d" transform="rotate(23 150 96)"/>
+  <ellipse cx="68" cy="72" rx="16" ry="8" fill="#ff6c9d" transform="rotate(-33 68 72)"/>
+  <ellipse cx="132" cy="72" rx="16" ry="8" fill="#ff6c9d" transform="rotate(33 132 72)"/>
+  <circle cx="82" cy="102" r="11" fill="#fff"/>
+  <circle cx="118" cy="102" r="11" fill="#fff"/>
+  <circle cx="84" cy="104" r="6.4" fill="#4a2f40"/>
+  <circle cx="120" cy="104" r="6.4" fill="#4a2f40"/>
+  <circle cx="86" cy="101" r="2.2" fill="#fff"/>
+  <circle cx="122" cy="101" r="2.2" fill="#fff"/>
+  <path d="M88 121 Q100 133 112 121" stroke="#603b53" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M49 140 Q22 143 19 163" stroke="#ff73a2" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M151 140 Q178 143 181 163" stroke="#ff73a2" stroke-width="9" fill="none" stroke-linecap="round"/>
+</svg>

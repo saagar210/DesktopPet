@@ -1,22 +1,25 @@
 import type { PetState, PetEvent, PetQuest } from "../../store/types";
+import { useState } from "react";
 
 interface Props {
   pet: PetState;
   events: PetEvent[];
   activeQuest: PetQuest | null;
+  interactionVerbs: Array<{ id: string; label: string }>;
   onInteract: (action: string) => void;
+  onCaptureCard: () => Promise<string>;
   onRollEvent: () => void;
   onResolveEvent: (eventId: string) => void;
 }
 
-const ACTIONS = [
-  { action: "pet", label: "Pat", icon: "👋" },
-  { action: "feed", label: "Feed", icon: "🍎" },
-  { action: "play", label: "Play", icon: "🎾" },
-  { action: "nap", label: "Nap", icon: "💤" },
-  { action: "clean", label: "Clean", icon: "🛁" },
-  { action: "train", label: "Train", icon: "💪" },
-];
+const ACTION_ICONS: Record<string, string> = {
+  pet: "👋",
+  feed: "🍎",
+  play: "🎾",
+  nap: "💤",
+  clean: "🛁",
+  train: "💪",
+};
 
 function StatBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -33,7 +36,18 @@ function StatBar({ label, value, color }: { label: string; value: number; color:
   );
 }
 
-export function PetPanel({ pet, events, activeQuest, onInteract, onRollEvent, onResolveEvent }: Props) {
+export function PetPanel({
+  pet,
+  events,
+  activeQuest,
+  interactionVerbs,
+  onInteract,
+  onCaptureCard,
+  onRollEvent,
+  onResolveEvent,
+}: Props) {
+  const [photoMessage, setPhotoMessage] = useState<string | null>(null);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Pet Status */}
@@ -60,19 +74,34 @@ export function PetPanel({ pet, events, activeQuest, onInteract, onRollEvent, on
       <div className="rounded-lg p-4" style={{ backgroundColor: "var(--card-bg)" }}>
         <h3 className="font-medium mb-3" style={{ color: "var(--text-color)" }}>Actions</h3>
         <div className="grid grid-cols-3 gap-2">
-          {ACTIONS.map((item) => (
+          {interactionVerbs.map((item) => (
             <button
-              key={item.action}
+              key={item.id}
               type="button"
-              onClick={() => onInteract(item.action)}
+              onClick={() => onInteract(item.id)}
               className="flex flex-col items-center gap-1 p-3 rounded-lg transition-colors hover:opacity-80"
               style={{ backgroundColor: "var(--panel-bg)" }}
             >
-              <span className="text-xl">{item.icon}</span>
+              <span className="text-xl">{ACTION_ICONS[item.id] ?? "✨"}</span>
               <span className="text-xs" style={{ color: "var(--text-color)" }}>{item.label}</span>
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            void onCaptureCard().then(setPhotoMessage);
+          }}
+          className="mt-3 w-full py-2 rounded-lg text-sm text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "var(--accent-color)" }}
+        >
+          Photo Booth: Save Pet Card
+        </button>
+        {photoMessage && (
+          <p className="mt-2 text-xs" style={{ color: "var(--muted-color)" }}>
+            {photoMessage}
+          </p>
+        )}
       </div>
 
       {/* Active Quest */}
@@ -80,6 +109,9 @@ export function PetPanel({ pet, events, activeQuest, onInteract, onRollEvent, on
         <div className="rounded-lg p-4" style={{ backgroundColor: "var(--accent-soft)" }}>
           <h3 className="font-medium mb-2" style={{ color: "var(--accent-color)" }}>Active Quest</h3>
           <p className="text-sm mb-2" style={{ color: "var(--text-color)" }}>{activeQuest.title}</p>
+          <p className="text-xs mb-2 capitalize" style={{ color: "var(--muted-color)" }}>
+            {activeQuest.kind.replace("_", " ")}
+          </p>
           <div className="flex items-center justify-between text-xs" style={{ color: "var(--muted-color)" }}>
             <span>{activeQuest.completedSessions}/{activeQuest.targetSessions} sessions</span>
             <span>+{activeQuest.rewardCoins} coins</span>

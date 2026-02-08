@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Axolotl stage 1">
+  <ellipse cx="100" cy="122" rx="60" ry="50" fill="#ffb9cf"/>
+  <ellipse cx="100" cy="126" rx="38" ry="32" fill="#ffd8e7"/>
+  <ellipse cx="56" cy="98" rx="16" ry="8" fill="#ff8bb1" transform="rotate(-25 56 98)"/>
+  <ellipse cx="144" cy="98" rx="16" ry="8" fill="#ff8bb1" transform="rotate(25 144 98)"/>
+  <ellipse cx="72" cy="78" rx="12" ry="6" fill="#ff8bb1" transform="rotate(-35 72 78)"/>
+  <ellipse cx="128" cy="78" rx="12" ry="6" fill="#ff8bb1" transform="rotate(35 128 78)"/>
+  <circle cx="82" cy="106" r="10" fill="#fff"/>
+  <circle cx="118" cy="106" r="10" fill="#fff"/>
+  <circle cx="84" cy="108" r="5.8" fill="#5a3850"/>
+  <circle cx="120" cy="108" r="5.8" fill="#5a3850"/>
+  <path d="M90 124 Q100 132 110 124" stroke="#6f4862" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M52 136 Q30 138 28 152" stroke="#ff97ba" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M148 136 Q170 138 172 152" stroke="#ff97ba" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>

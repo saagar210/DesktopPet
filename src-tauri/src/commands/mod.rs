@@ -10,3 +10,4 @@ pub mod settings;
 pub mod shop;
 pub mod tasks;
 pub mod timer_runtime;
+pub mod tray;

@@ -1,0 +1,26 @@
+{
+  "id": "cat",
+  "name": "Cat",
+  "description": "A sleepy-soft lap cat that blinks slowly and keeps the desk cozy.",
+  "stageNames": ["Kit", "Purrling", "Moon Cat"],
+  "evolutionThresholds": [0, 4, 12],
+  "idleBehavior": {
+    "baseAnimation": "sway",
+    "blinkIntervalMs": [4200, 7600]
+  },
+  "interactionVerbs": [
+    { "id": "pet", "label": "Scritch" },
+    { "id": "feed", "label": "Treat" },
+    { "id": "play", "label": "Feather" },
+    { "id": "nap", "label": "Curl up" },
+    { "id": "clean", "label": "Brush" },
+    { "id": "train", "label": "Trick" }
+  ],
+  "stageSpriteFiles": ["cat-stage-0.svg", "cat-stage-1.svg", "cat-stage-2.svg"],
+  "accessoryAnchors": {
+    "head": { "x": 100, "y": 34 },
+    "neck": { "x": 100, "y": 114 },
+    "left": { "x": 52, "y": 120 },
+    "right": { "x": 148, "y": 120 }
+  }
+}

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { getSpeciesPackById, getSpeciesPacks } from "../../pets/species";
+import { getSeasonalPacks } from "../../pets/seasonalPacks";
 import type { CustomizationLoadout, PetState, Settings, SettingsPatch } from "../../store/types";
 
 interface Props {
@@ -7,6 +9,7 @@ interface Props {
   loadouts: CustomizationLoadout[];
   onUpdateSettings: (patch: SettingsPatch) => void;
   onSetPetCustomization: (skin?: string, scene?: string) => void;
+  onSetPetSpecies: (speciesId: string, evolutionThresholds: number[]) => void;
   onSaveLoadout: (loadout: CustomizationLoadout) => void;
   onApplyLoadout: (name: string) => void;
 }
@@ -26,10 +29,13 @@ export function CustomizationPanel({
   loadouts,
   onUpdateSettings,
   onSetPetCustomization,
+  onSetPetSpecies,
   onSaveLoadout,
   onApplyLoadout,
 }: Props) {
   const [loadoutName, setLoadoutName] = useState("");
+  const speciesPacks = getSpeciesPacks();
+  const seasonalPacks = getSeasonalPacks();
 
   return (
     <div className="flex flex-col gap-4">
@@ -68,6 +74,31 @@ export function CustomizationPanel({
         style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border-color)" }}
       >
         <h3 className="text-sm font-medium" style={{ color: "var(--text-color)" }}>Pet Style</h3>
+        <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
+          Species
+          <select
+            value={pet.speciesId}
+            onChange={(event) => {
+              const selected = speciesPacks.find((pack) => pack.id === event.target.value);
+              if (!selected) {
+                return;
+              }
+              onSetPetSpecies(selected.id, selected.evolutionThresholds);
+            }}
+            className="px-2 py-1 border rounded-md text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+              color: "var(--text-color)",
+            }}
+          >
+            {speciesPacks.map((pack) => (
+              <option key={pack.id} value={pack.id}>
+                {pack.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
           Skin
           <select
@@ -142,6 +173,69 @@ export function CustomizationPanel({
               </div>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div
+        className="p-3 rounded-lg border flex flex-col gap-2"
+        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border-color)" }}
+      >
+        <h3 className="text-sm font-medium" style={{ color: "var(--text-color)" }}>
+          Seasonal Cosmetic Packs (Optional)
+        </h3>
+        <p className="text-xs" style={{ color: "var(--muted-color)" }}>
+          No timed nudges. Enable only what you want.
+        </p>
+        <div className="flex flex-col gap-2">
+          {seasonalPacks.map((pack) => {
+            const enabled = settings.enabledSeasonalPacks.includes(pack.id);
+            return (
+              <div key={pack.id} className="rounded-md border p-2" style={{ borderColor: "var(--border-color)" }}>
+                <label className="flex items-center justify-between gap-2 text-sm">
+                  <span style={{ color: "var(--text-color)" }}>{pack.name}</span>
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(event) => {
+                      const next = event.target.checked
+                        ? [...settings.enabledSeasonalPacks, pack.id]
+                        : settings.enabledSeasonalPacks.filter((id) => id !== pack.id);
+                      onUpdateSettings({ enabledSeasonalPacks: next });
+                    }}
+                  />
+                </label>
+                <div className="text-xs mt-1" style={{ color: "var(--muted-color)" }}>
+                  {pack.description}
+                </div>
+                {enabled && (
+                  <div className="mt-2 flex flex-col gap-1">
+                    {pack.bundles.map((bundle) => (
+                      <button
+                        key={bundle.name}
+                        onClick={() => {
+                          onUpdateSettings({
+                            uiTheme: bundle.uiTheme,
+                            petSkin: bundle.petSkin,
+                            petScene: bundle.petScene,
+                          });
+                          onSetPetCustomization(bundle.petSkin, bundle.petScene);
+                          const species = getSpeciesPackById(bundle.speciesId);
+                          onSetPetSpecies(species.id, species.evolutionThresholds);
+                        }}
+                        className="text-left px-2 py-2 rounded-md border text-xs transition-opacity hover:opacity-90"
+                        style={{ borderColor: "var(--border-color)", color: "var(--text-color)" }}
+                      >
+                        <div className="font-medium">{bundle.name}</div>
+                        <div style={{ color: "var(--muted-color)" }}>
+                          {bundle.uiTheme} • {bundle.petSkin} • {bundle.petScene} • {bundle.speciesId}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

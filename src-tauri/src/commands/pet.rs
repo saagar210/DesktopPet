@@ -6,6 +6,7 @@ use crate::events::{EVENT_COINS_CHANGED, EVENT_PET_STATE_CHANGED};
 use crate::models::{CoinBalance, PetEvent, PetQuest, PetState};
 
 const MAX_PET_EVENTS: usize = 30;
+const MAX_SPECIES_ID_CHARS: usize = 48;
 const ALLOWED_ANIMATIONS: &[&str] = &[
     "idle",
     "working",
@@ -22,6 +23,51 @@ fn validate_variant(value: String, allowed: &[&str], label: &str) -> Result<Stri
         Ok(value)
     } else {
         Err(format!("Invalid {}: {}", label, value))
+    }
+}
+
+fn normalize_species_id(value: String) -> Result<String, String> {
+    let normalized = value.trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        return Err("Species id cannot be empty".to_string());
+    }
+    if normalized.chars().count() > MAX_SPECIES_ID_CHARS {
+        return Err("Species id is too long".to_string());
+    }
+    if !normalized
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+    {
+        return Err("Species id has invalid characters".to_string());
+    }
+    Ok(normalized)
+}
+
+fn normalize_evolution_thresholds(input: Option<Vec<u32>>) -> Vec<u32> {
+    let mut values = input.unwrap_or_else(|| vec![0, 5, 15]);
+    if values.len() < 3 {
+        values = vec![0, 5, 15];
+    }
+    let stage1 = values[1].max(1);
+    let stage2 = values[2].max(stage1 + 1);
+    vec![0, stage1, stage2]
+}
+
+fn stage_for_total_pomodoros(total_pomodoros: u32, thresholds: &[u32]) -> u32 {
+    if thresholds.len() < 3 {
+        if total_pomodoros >= 15 {
+            2
+        } else if total_pomodoros >= 5 {
+            1
+        } else {
+            0
+        }
+    } else if total_pomodoros >= thresholds[2] {
+        2
+    } else if total_pomodoros >= thresholds[1] {
+        1
+    } else {
+        0
     }
 }
 
@@ -89,6 +135,52 @@ fn quest_target_for_stage(stage: u32) -> u32 {
 
 fn quest_reward_for_stage(stage: u32) -> u32 {
     12 + (stage * 4)
+}
+
+#[derive(Clone, Copy)]
+struct QuestTemplate {
+    kind: &'static str,
+    title: &'static str,
+    description: &'static str,
+}
+
+const QUEST_TEMPLATES: [QuestTemplate; 2] = [
+    QuestTemplate {
+        kind: "focus_sessions",
+        title: "Steady Focus",
+        description: "Complete calm focus sessions with your companion.",
+    },
+    QuestTemplate {
+        kind: "care_actions",
+        title: "Gentle Care",
+        description: "Do small care actions to keep your companion cozy.",
+    },
+];
+
+fn create_quest_for_pet(pet: &PetState) -> PetQuest {
+    let template = QUEST_TEMPLATES[(pet.total_pomodoros as usize) % QUEST_TEMPLATES.len()];
+    let stage_target = quest_target_for_stage(pet.current_stage);
+    let target_sessions = if template.kind == "care_actions" {
+        stage_target + 1
+    } else {
+        stage_target
+    };
+    let reward = if template.kind == "care_actions" {
+        quest_reward_for_stage(pet.current_stage).saturating_sub(2).max(8)
+    } else {
+        quest_reward_for_stage(pet.current_stage)
+    };
+
+    PetQuest {
+        id: uuid::Uuid::new_v4().to_string(),
+        kind: template.kind.to_string(),
+        title: template.title.to_string(),
+        description: template.description.to_string(),
+        target_sessions,
+        completed_sessions: 0,
+        reward_coins: reward,
+        created_at: chrono::Utc::now().to_rfc3339(),
+    }
 }
 
 fn load_events(app: &AppHandle) -> Result<Vec<PetEvent>, String> {
@@ -232,6 +324,7 @@ pub fn pet_interact(
 
     save_pet(&app, &pet)?;
     let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
+    let _ = advance_care_quest(&app, 1);
     Ok(pet)
 }
 
@@ -251,6 +344,30 @@ pub fn set_pet_customization(
         pet.scene = validate_variant(scene, ALLOWED_SCENES, "pet scene")?;
     }
     save_pet(&app, &pet)?;
+    let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
+    Ok(pet)
+}
+
+#[tauri::command]
+pub fn set_pet_species(
+    app: AppHandle,
+    store_lock: tauri::State<'_, crate::StoreLock>,
+    species_id: String,
+    evolution_thresholds: Option<Vec<u32>>,
+) -> Result<PetState, String> {
+    let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
+    let mut pet = load_pet(&app)?;
+    pet.species_id = normalize_species_id(species_id)?;
+    pet.evolution_thresholds = normalize_evolution_thresholds(evolution_thresholds);
+    pet.current_stage = stage_for_total_pomodoros(pet.total_pomodoros, &pet.evolution_thresholds);
+    pet.last_interaction = Some("species_switch".to_string());
+    save_pet(&app, &pet)?;
+    let _ = append_event(
+        &app,
+        "species",
+        format!("Switched species to '{}'.", pet.species_id),
+        true,
+    );
     let _ = app.emit(EVENT_PET_STATE_CHANGED, &pet);
     Ok(pet)
 }
@@ -283,12 +400,31 @@ pub fn advance_focus_quest(
     app: &AppHandle,
     completed_sessions: u32,
 ) -> Result<Option<PetEvent>, String> {
+    progress_active_quest(app, "focus_sessions", completed_sessions)
+}
+
+pub fn advance_care_quest(
+    app: &AppHandle,
+    completed_actions: u32,
+) -> Result<Option<PetEvent>, String> {
+    progress_active_quest(app, "care_actions", completed_actions)
+}
+
+fn progress_active_quest(
+    app: &AppHandle,
+    supported_kind: &str,
+    delta: u32,
+) -> Result<Option<PetEvent>, String> {
     let mut quest = match load_active_quest(app)? {
         Some(quest) => quest,
         None => return Ok(None),
     };
 
-    quest.completed_sessions = quest.completed_sessions.saturating_add(completed_sessions);
+    if quest.kind != supported_kind {
+        return Ok(None);
+    }
+
+    quest.completed_sessions = quest.completed_sessions.saturating_add(delta);
 
     if quest.completed_sessions < quest.target_sessions {
         save_active_quest(app, Some(&quest))?;
@@ -383,29 +519,21 @@ pub fn roll_pet_event(
             id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
             description: format!(
-                "Active quest: {} ({}/{})",
-                quest.title, quest.completed_sessions, quest.target_sessions
+                "Active quest: {} ({}/{}) [{}]",
+                quest.title, quest.completed_sessions, quest.target_sessions, quest.kind
             ),
             created_at: chrono::Utc::now().to_rfc3339(),
             resolved: false,
         }
     } else {
-        let quest = PetQuest {
-            id: uuid::Uuid::new_v4().to_string(),
-            title: "Focus Sprint".to_string(),
-            description: "Complete focus sessions with your pet to earn bonus coins.".to_string(),
-            target_sessions: quest_target_for_stage(pet.current_stage),
-            completed_sessions: 0,
-            reward_coins: quest_reward_for_stage(pet.current_stage),
-            created_at: chrono::Utc::now().to_rfc3339(),
-        };
+        let quest = create_quest_for_pet(&pet);
         save_active_quest(&app, Some(&quest))?;
         PetEvent {
             id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
             description: format!(
-                "Quest started: {} (0/{}) for +{} coins.",
-                quest.title, quest.target_sessions, quest.reward_coins
+                "Quest started: {} (0/{}) [{}] for +{} coins.",
+                quest.title, quest.target_sessions, quest.kind, quest.reward_coins
             ),
             created_at: chrono::Utc::now().to_rfc3339(),
             resolved: false,
@@ -421,7 +549,8 @@ pub fn roll_pet_event(
 #[cfg(test)]
 mod tests {
     use super::{
-        quest_reward_for_stage, quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
+        normalize_evolution_thresholds, normalize_species_id, quest_reward_for_stage,
+        quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
     };
 
     #[test]
@@ -444,5 +573,17 @@ mod tests {
         let err =
             validate_variant("unknown".to_string(), ALLOWED_ANIMATIONS, "animation").unwrap_err();
         assert!(err.contains("Invalid animation"));
+    }
+
+    #[test]
+    fn normalize_species_id_accepts_slug() {
+        let normalized = normalize_species_id(" Axolotl-Blue ".to_string()).unwrap();
+        assert_eq!(normalized, "axolotl-blue");
+    }
+
+    #[test]
+    fn normalize_evolution_thresholds_repairs_invalid_input() {
+        assert_eq!(normalize_evolution_thresholds(Some(vec![0, 0, 0])), vec![0, 1, 2]);
+        assert_eq!(normalize_evolution_thresholds(Some(vec![0, 8, 4])), vec![0, 8, 9]);
     }
 }
