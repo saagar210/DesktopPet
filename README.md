@@ -52,6 +52,7 @@ The pet is SVG-based, and app data is stored locally on-device.
 npm install
 npm test
 npm run test:smoke
+npm run test:pack-qa
 npm run tauri dev
 ```
 
@@ -64,7 +65,9 @@ npm run tauri dev
 This runs:
 - `npm test`
 - `npm run test:smoke`
+- `npm run test:pack-qa`
 - `npm run build`
+- `npm run check:performance-budget`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`
 

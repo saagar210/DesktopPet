@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-02-08T12:15:43.082Z",
+  "targets": {
+    "speciesJs": {
+      "file": "species-CRyvzunG.js",
+      "rawBytes": 232855,
+      "gzipBytes": 69696
+    },
+    "panelJs": {
+      "file": "panel-DM8g47qk.js",
+      "rawBytes": 69595,
+      "gzipBytes": 17581
+    },
+    "petCss": {
+      "file": "pet-78HkDl9z.css",
+      "rawBytes": 23302,
+      "gzipBytes": 5156
+    }
+  }
+}

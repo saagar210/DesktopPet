@@ -216,12 +216,48 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Go only when pack onboarding remains drop-in and verification matrix stays green.
 - Status: complete on February 8, 2026 (`docs/manual-qa-runs/2026-02-08-phase11-post-release-guardrails.md`).
 
+## Phase 12: Runtime Pack Guardrails + CI Budget Enforcement
+
+### Goals
+- Prevent unsupported species pack schemas from loading at runtime.
+- Convert pack-policy docs into enforced CI checks and machine-readable artifacts.
+- Catch bundle budget regressions before merge.
+
+### Deliverables
+- Runtime `schemaVersion` enforcement in species pack loading.
+- Validator rule coverage for schema version.
+- Automated pack QA harness with JSON/Markdown report artifacts.
+- CI budget gate that fails PRs exceeding documented gzip deltas.
+
+### File Touchpoints
+- `src/pets/species.ts`
+- `src/pets/packValidation.ts`
+- `src/pets/packs/*.json`
+- `src/pets/__tests__/species.test.ts`
+- `src/pets/__tests__/packValidation.test.ts`
+- `scripts/pack_qa.mjs`
+- `scripts/check_performance_budget.mjs`
+- `scripts/verify.sh`
+- `.github/workflows/ci.yml`
+- `docs/performance-budget-baseline.json`
+
+### Stop/Go Checkpoint
+- Stop if unsupported pack schemas can still load silently.
+- Stop if performance budgets are documented but not CI-enforced.
+- Go only when:
+  - `npm run test:pack-qa` passes
+  - `npm run check:performance-budget` passes
+  - full verification matrix remains green
+- Status: complete on February 8, 2026 (`docs/manual-qa-runs/2026-02-08-phase12-runtime-pack-guardrails.md`).
+
 ## Cross-Phase Verification Matrix
 
 ### Automated
 - Frontend unit/integration: `npm test`
 - Smoke pack: `npm run test:smoke`
+- Pack QA harness: `npm run test:pack-qa`
 - Frontend build/type checks: `npm run build`
+- Performance budget gate: `npm run check:performance-budget`
 - Rust command/model tests: `cargo test --manifest-path src-tauri/Cargo.toml`
 - Full verification and bundle: `./scripts/verify.sh`
 
@@ -240,4 +276,4 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Do not start the next phase until the current phase passes both automated and manual checkpoint criteria.
 
 ## Current State
-- Planned phases in this document (7 through 11) are complete and have associated verification evidence.
+- Planned phases in this document (7 through 12) are complete and have associated verification evidence.

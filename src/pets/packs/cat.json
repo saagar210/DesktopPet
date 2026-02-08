@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "id": "cat",
   "name": "Cat",
   "description": "A sleepy-soft lap cat that blinks slowly and keeps the desk cozy.",

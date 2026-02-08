@@ -11,6 +11,7 @@ Sprites are loaded from `src/pets/sprites/*.svg`, `*.png`, or `*.webp`.
 ## Required Fields
 ```json
 {
+  "schemaVersion": 1,
   "id": "cat",
   "name": "Cat",
   "description": "A cozy desk companion.",
@@ -48,6 +49,7 @@ Canonical validation metadata (rule ids, labels, remediation text) is defined in
 `src/pets/packValidation.ts` via `PACK_VALIDATION_RULEBOOK`.
 
 - `id-slug`: lowercase slug (`a-z`, `0-9`, `_`, `-`).
+- `schema-version`: must equal `1` (current runtime-supported schema).
 - `stage-names`: exactly 3 entries.
 - `thresholds`: exactly 3 ascending numbers, starts at 0.
 - `sprites`: exactly 3 sprite files present in `src/pets/sprites/`.
@@ -58,8 +60,8 @@ Canonical validation metadata (rule ids, labels, remediation text) is defined in
 
 ## Compatibility Matrix
 
-DesktopPet currently supports pack schema **v1** (the shape documented on this page).
-Until runtime schema negotiation is introduced, any new pack format must be migrated to v1 before drop-in use.
+DesktopPet currently supports pack schema **v1** (enforced at runtime in `src/pets/species.ts`).
+Any pack with an unsupported `schemaVersion` fails load and fails pack QA validation.
 
 | Schema | Runtime Support | Required Action | Notes |
 | --- | --- | --- | --- |

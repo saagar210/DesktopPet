@@ -28,8 +28,23 @@ jobs:
       - name: Run frontend smoke tests
         run: npm run test:smoke
 
+      - name: Run pack QA harness
+        run: npm run test:pack-qa
+
       - name: Run frontend build
         run: npm run build
+
+      - name: Run performance budget gate (PR only)
+        if: github.event_name == 'pull_request'
+        run: npm run check:performance-budget
+
+      - name: Upload frontend QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-qa-artifacts
+          path: artifacts/*.*
+          if-no-files-found: ignore
 
   tauri-backend:
     name: Tauri Backend + Bundle

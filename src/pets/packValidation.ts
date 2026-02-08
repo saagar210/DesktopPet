@@ -1,6 +1,7 @@
-import type { PetSpeciesPack } from "./species";
+import { SUPPORTED_PACK_SCHEMA_VERSION, type PetSpeciesPack } from "./species";
 
 export type PackValidationRuleId =
+  | "schema-version"
   | "id-slug"
   | "stage-names"
   | "thresholds"
@@ -16,6 +17,10 @@ interface PackValidationRuleSpec {
 }
 
 export const PACK_VALIDATION_RULEBOOK: Record<PackValidationRuleId, PackValidationRuleSpec> = {
+  "schema-version": {
+    label: "Supported schema version",
+    remediation: `Set schemaVersion to ${SUPPORTED_PACK_SCHEMA_VERSION} (current supported schema).`,
+  },
   "id-slug": {
     label: "Valid species id slug",
     remediation:
@@ -95,6 +100,14 @@ function makeCheck(
 
 export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult {
   const checks: PackValidationCheck[] = [];
+
+  checks.push(
+    makeCheck(
+      "schema-version",
+      pack.schemaVersion === SUPPORTED_PACK_SCHEMA_VERSION,
+      `v${pack.schemaVersion}`
+    )
+  );
 
   checks.push(makeCheck("id-slug", isSlug(pack.id), pack.id));
 

@@ -21,6 +21,8 @@ Rules:
 ## Bundle Size Budget
 
 Use `npm run build` output as evidence in PRs touching pets/assets.
+CI enforcement uses `npm run check:performance-budget`, reading baseline values from
+`docs/performance-budget-baseline.json`.
 
 Release deltas (compared with latest `master` release artifact):
 
@@ -33,6 +35,13 @@ If a PR exceeds a budget:
 - include explicit justification
 - add mitigation (asset compression, sprite simplification, or code-splitting)
 - obtain reviewer sign-off before merge
+
+Automation details:
+
+- `npm run check:performance-budget`: computes current bundle gzip sizes and fails if deltas exceed thresholds.
+- report artifacts are written to:
+  - `artifacts/performance-budget-report.json`
+  - `artifacts/performance-budget-report.md`
 
 ## Runtime Guardrail Checks
 

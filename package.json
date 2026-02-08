@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "check:performance-budget": "node ./scripts/check_performance_budget.mjs",
+    "test:pack-qa": "node ./scripts/pack_qa.mjs",
     "test": "vitest run",
     "test:smoke": "./scripts/tauri-smoke.sh",
     "test:watch": "vitest",
