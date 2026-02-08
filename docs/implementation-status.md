@@ -12,6 +12,8 @@ This repository has completed the following hardening phases:
 - Phase 7: pack authoring UX + validation hardening
 - Phase 8: behavior composer + accessory personality layer
 - Phase 9: progression 2.0 (in progress)
+  - Iteration A complete: calm quest scheduler + anti-nag cooldown + quiet feedback surfaced in pet panel.
+  - Remaining: Iteration B (quest catalog + accessory behavior links), Iteration C (seasonal pack polish + acceptance QA).
 
 See supporting docs in `/docs` for implementation details.
 

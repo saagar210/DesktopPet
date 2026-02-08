@@ -100,33 +100,64 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Deepen progression while preserving non-nag behavior.
 - Keep rewarding loops user-triggered and low-noise.
 
-### Deliverables
-- Quest template catalog with calm-friendly objectives (focus streaks, hydration breaks, cleanup rituals).
-- Quest scheduler guardrails (cooldowns, no urgent prompts, no repetitive nagging).
-- Cosmetic accessories with tiny behavior-linked effects (idle prop usage, blink variants, posture accents).
-- Photo Booth v2 card themes bound to species/loadout.
-- Optional seasonal cosmetic event packs with explicit opt-in and no FOMO messaging.
+### Iteration Plan (Detailed)
 
-### File Touchpoints
-- `src-tauri/src/models.rs`
+### Iteration A (completed): Calm Scheduler + UI Feedback
+- Deliverables
+- Quest template scheduler with anti-repeat + cooldown behavior.
+- Quiet cooldown response surfaced in `PetPanel` with no toast/popup escalation.
+- New-quest action button throttled while request is in flight to avoid spam clicks.
+- File touchpoints
 - `src-tauri/src/commands/pet.rs`
 - `src/components/panel/PetPanel.tsx`
-- `src/components/panel/CustomizationPanel.tsx`
-- `src/lib/photoBooth.ts`
-- `src/components/pet/PetOverlay.tsx`
-- `src/pets/seasonal/*.json`
-- `src/pets/seasonalPacks.ts`
+- `src/components/panel/ControlPanel.tsx`
+- `src/hooks/usePetEvents.ts`
 - `src/components/panel/__tests__/PetPanel.smoke.test.tsx`
+- Stop/Go criteria
+- Stop if New Quest can emit multiple rapid requests.
+- Go only when `PetPanel.smoke` covers cooldown feedback + button throttle.
+
+### Iteration B (next): Accessory-linked Progression Moments
+- Deliverables
+- Extend quest catalog weights by stage and recent behavior (focus/care mix).
+- Accessory metadata hooks for tiny quest-related micro-behavior accents.
+- Photo Booth v2 theme variants keyed by species + loadout.
+- File touchpoints
+- `src-tauri/src/models.rs`
+- `src-tauri/src/commands/pet.rs`
+- `src/components/panel/ShopPanel.tsx`
+- `src/components/pet/PetOverlay.tsx`
+- `src/lib/photoBooth.ts`
 - `src/lib/__tests__/photoBooth.test.ts`
 - `src-tauri/src/commands/pet.rs` tests
+- Stop/Go criteria
+- Stop if reward totals drift beyond stage pacing envelope.
+- Go only when stage reward regression tests and photo booth theme tests pass.
 
-### Risks + Mitigations
+### Iteration C (next): Optional Seasonal Packs + Calm QA
+- Deliverables
+- Optional seasonal cosmetic packs remain disabled by default.
+- Seasonal pack activation/deactivation flow in customization with clear calm copy.
+- Manual calmness QA pass for quiet/focus/chill while seasonal packs enabled.
+- File touchpoints
+- `src/pets/seasonal/*.json`
+- `src/pets/seasonalPacks.ts`
+- `src/components/panel/CustomizationPanel.tsx`
+- `src/components/panel/__tests__/CustomizationPanel.smoke.test.tsx`
+- `docs/manual-qa-runs/*`
+- Stop/Go criteria
+- Stop if any seasonal pack path emits automatic toasts or nag prompts.
+- Go only when seasonal behavior remains opt-in and manual QA checklist passes.
+
+### Phase Risks + Mitigations
 - Risk: reward inflation breaks pacing.
 - Mitigation: cap daily quest coin issuance and add regression tests for reward totals by stage.
 - Risk: optional events feel like pressure.
 - Mitigation: default all event packs disabled; no automatic toast path for event content.
+- Risk: quiet cooldown messaging becomes noisy.
+- Mitigation: keep feedback inline-only and overwrite previous roll feedback instead of stacking notices.
 
-### Stop/Go Checkpoint
+### Phase Stop/Go Checkpoint
 - Stop if quest notifications exceed whitelist policy.
 - Go only when reward accounting and quest completion tests pass across stage boundaries.
 
@@ -160,6 +191,27 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 ### Stop/Go Checkpoint
 - Stop on any mismatch between docs and observable app behavior.
 - Go only with full release gate green and manual QA sign-off.
+
+## Phase 11: Post-Release Expansion Guardrails
+
+### Goals
+- Keep future content additions scalable without eroding calm defaults.
+- Preserve local-first reliability while adding optional pack complexity.
+
+### Deliverables
+- Species pack compatibility matrix (supported schema versions and migration notes).
+- Lightweight performance budget doc for animation cadence and bundle-size deltas.
+- Regression checklist for pack authors (validator + calmness + accessibility pass).
+
+### File Touchpoints
+- `docs/pet-species-pack-format.md`
+- `docs/architecture.md`
+- `docs/release.md`
+- `CONTRIBUTING.md`
+
+### Stop/Go Checkpoint
+- Stop if a new pack requires runtime code changes to load.
+- Go only when pack onboarding remains drop-in and verification matrix stays green.
 
 ## Cross-Phase Verification Matrix
 
