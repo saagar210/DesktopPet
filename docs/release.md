@@ -46,6 +46,15 @@ Release is **Go** only when all are true:
 - manual QA run shows no blocking calmness/cuteness regressions
 - backup/import/reset and diagnostics paths still work
 
+## Pack Expansion Gate (Post-Release)
+
+For any release that includes species or seasonal pack updates:
+
+- complete `docs/pack-author-regression-checklist.md`
+- confirm compatibility against `docs/pet-species-pack-format.md`
+- confirm animation + bundle budgets in `docs/performance-budget.md`
+- include pack validation evidence in release PR notes
+
 ## CI Release Workflow
 
 `/.github/workflows/release.yml` handles:

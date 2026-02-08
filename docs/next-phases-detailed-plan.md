@@ -214,6 +214,7 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 ### Stop/Go Checkpoint
 - Stop if a new pack requires runtime code changes to load.
 - Go only when pack onboarding remains drop-in and verification matrix stays green.
+- Status: complete on February 8, 2026 (`docs/manual-qa-runs/2026-02-08-phase11-post-release-guardrails.md`).
 
 ## Cross-Phase Verification Matrix
 
@@ -237,3 +238,6 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Complete one phase per PR stack when feasible, with each phase checkpoint fully green before continuing.
 - Keep commits scoped by subsystem (validator, CI, docs, behavior engine, quests) for fast reviews.
 - Do not start the next phase until the current phase passes both automated and manual checkpoint criteria.
+
+## Current State
+- Planned phases in this document (7 through 11) are complete and have associated verification evidence.

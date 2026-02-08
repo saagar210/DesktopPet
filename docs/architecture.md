@@ -24,6 +24,7 @@ Desktop Pet is a local-first macOS desktop application built with:
   - Behavior composer merges species profile + accessory effects + calm controls.
   - Optional seasonal pack metadata (`seasonal/*.json`) activated only by user opt-in.
   - Photo Booth theme resolver maps species + loadout to deterministic card presentation.
+  - Pack compatibility policy is documented in `docs/pet-species-pack-format.md`.
 
 ## Data Flow
 
@@ -85,6 +86,12 @@ These support local backup/restore, reset, and support diagnostics without exter
   - species pack rule checks
   - quest/event anti-nag cooldown behavior
   - animation budget and chill-path behavior composition
+
+## Performance Guardrails
+
+- Animation cadence and bundle-size budgets are defined in `docs/performance-budget.md`.
+- Pack changes must pass `docs/pack-author-regression-checklist.md` before merge.
+- Budget exceptions require explicit PR justification and mitigation notes.
 
 ## Build + Test Entry Points
 
