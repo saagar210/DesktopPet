@@ -13,6 +13,12 @@ import type { TimerPreset } from "../lib/constants";
 import type { FocusGuardrailsStatus, Settings, TimerRuntimeState } from "../store/types";
 
 type TimerPhase = "idle" | "work" | "break" | "celebrating";
+type NotificationEvent =
+  | "session_start"
+  | "break_start"
+  | "session_complete"
+  | "timer_idle"
+  | "guardrail_alert";
 
 interface PomodoroState {
   phase: TimerPhase;
@@ -21,6 +27,11 @@ interface PomodoroState {
   sessionId: string | null;
   sessionsCompleted: number;
   preset: TimerPreset;
+}
+
+interface TrayBadgeResult {
+  usedTitle: boolean;
+  usedTooltip: boolean;
 }
 
 const TIMER_PHASES: TimerPhase[] = ["idle", "work", "break", "celebrating"];
@@ -67,11 +78,22 @@ export function usePomodoro() {
   const [guardrailMessage, setGuardrailMessage] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const previousPhaseRef = useRef<TimerPhase>("idle");
+  const toastHistoryRef = useRef<number[]>([]);
+  const trayBadgeCountRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+  }, []);
+
+  const setTrayBadge = useCallback(async (count: number) => {
+    const result = await invokeMaybe<TrayBadgeResult>("set_tray_badge", { count });
+    if (!result || !result.usedTitle) {
+      window.localStorage.setItem("desktop-pet-tray-fallback-count", String(count));
+    } else {
+      window.localStorage.removeItem("desktop-pet-tray-fallback-count");
     }
   }, []);
 
@@ -238,29 +260,65 @@ export function usePomodoro() {
     invokeMaybe<Settings>("get_settings").then((settings) => {
       if (!settings) return;
       const title = "Pomodoro Buddy";
-      const message =
+      const notificationEvent: NotificationEvent =
         state.phase === "work"
-          ? "Focus session started."
+          ? "session_start"
           : state.phase === "break"
-            ? "Break time! Step away for a moment."
+            ? "break_start"
             : state.phase === "celebrating"
+              ? "session_complete"
+              : "timer_idle";
+      const message =
+        notificationEvent === "session_start"
+          ? "Focus session started."
+          : notificationEvent === "break_start"
+            ? "Break time! Step away for a moment."
+            : notificationEvent === "session_complete"
               ? "Great work — session complete!"
               : "Timer is now idle.";
 
-      if (settings.notificationsEnabled && "Notification" in window) {
+      const now = Date.now();
+      toastHistoryRef.current = toastHistoryRef.current.filter(
+        (timestamp) => now - timestamp < 60 * 60 * 1000
+      );
+      const allowToastByPolicy =
+        !settings.quietModeEnabled &&
+        settings.notificationsEnabled &&
+        settings.toastNotificationsEnabled &&
+        settings.notificationWhitelist.includes(notificationEvent) &&
+        toastHistoryRef.current.length < 3;
+
+      if (allowToastByPolicy && "Notification" in window) {
         if (Notification.permission === "granted") {
           new Notification(title, { body: message });
+          toastHistoryRef.current.push(now);
         } else if (Notification.permission === "default") {
           Notification.requestPermission().then((permission) => {
             if (permission === "granted") {
               new Notification(title, { body: message });
+              toastHistoryRef.current.push(Date.now());
             }
           });
         }
       }
 
-      if (settings.soundsEnabled) {
+      if (!settings.quietModeEnabled && settings.soundsEnabled) {
         playSoundCue(settings.soundVolume);
+      }
+
+      if (settings.trayBadgeEnabled && notificationEvent !== "timer_idle") {
+        trayBadgeCountRef.current += 1;
+        void setTrayBadge(trayBadgeCountRef.current);
+      }
+
+      if (!settings.trayBadgeEnabled) {
+        trayBadgeCountRef.current = 0;
+        void setTrayBadge(0);
+      }
+
+      if (notificationEvent === "timer_idle") {
+        trayBadgeCountRef.current = 0;
+        void setTrayBadge(0);
       }
 
       if (state.phase === "idle") {
@@ -293,7 +351,7 @@ export function usePomodoro() {
         }
       });
     });
-  }, [hydrated, paused, state.phase]);
+  }, [hydrated, paused, setTrayBadge, state.phase]);
 
   useEffect(() => {
     const onBlur = () => {
@@ -325,6 +383,42 @@ export function usePomodoro() {
     let unlisten = () => {};
     listenSafe<FocusGuardrailsStatus>(EVENT_FOCUS_GUARDRAILS_ALERT, (event) => {
       setGuardrailMessage(`Alert: ${event.payload.message}`);
+      invokeMaybe<Settings>("get_settings").then((settings) => {
+        if (!settings || settings.quietModeEnabled) {
+          return;
+        }
+        const now = Date.now();
+        toastHistoryRef.current = toastHistoryRef.current.filter(
+          (timestamp) => now - timestamp < 60 * 60 * 1000
+        );
+        if (toastHistoryRef.current.length >= 3) {
+          return;
+        }
+        if (
+          settings.notificationsEnabled &&
+          settings.toastNotificationsEnabled &&
+          settings.notificationWhitelist.includes("guardrail_alert")
+        ) {
+          if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+              new Notification("Pomodoro Buddy", {
+                body: event.payload.message,
+              });
+              toastHistoryRef.current.push(now);
+            } else if (Notification.permission === "default") {
+              Notification.requestPermission().then((permission) => {
+                if (permission !== "granted") {
+                  return;
+                }
+                new Notification("Pomodoro Buddy", {
+                  body: event.payload.message,
+                });
+                toastHistoryRef.current.push(Date.now());
+              });
+            }
+          }
+        }
+      });
     }).then((fn) => {
       if (cancelled) {
         fn();

@@ -15,7 +15,11 @@ Keep these in sync before tagging.
    - `./scripts/verify.sh`
 2. Confirm no unexpected files in git status.
 3. Confirm capability and security-sensitive changes were reviewed.
-4. Confirm backup/import/reset flows work in manual smoke test.
+4. Complete the manual QA checklist:
+   - `docs/manual-qa-checklist.md`
+5. Confirm backup/import/reset flows work in manual smoke test.
+
+Attach the completed checklist (or a short pass/fail summary) to the release PR.
 
 ## CI Release Workflow
 

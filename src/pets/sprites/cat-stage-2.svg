@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Cat stage 3">
+  <path d="M50 68 L75 24 L94 62" fill="#e8a85e"/>
+  <path d="M150 68 L125 24 L106 62" fill="#e8a85e"/>
+  <ellipse cx="100" cy="121" rx="66" ry="67" fill="#ebb874"/>
+  <ellipse cx="100" cy="129" rx="42" ry="45" fill="#ffe0b8"/>
+  <circle cx="100" cy="72" r="45" fill="#f3c586"/>
+  <ellipse cx="82" cy="70" rx="11.5" ry="12" fill="#fff"/>
+  <ellipse cx="118" cy="70" rx="11.5" ry="12" fill="#fff"/>
+  <ellipse cx="84" cy="72" rx="7" ry="7.4" fill="#2f2222"/>
+  <ellipse cx="120" cy="72" rx="7" ry="7.4" fill="#2f2222"/>
+  <path d="M94 90 L100 95 L106 90" stroke="#704833" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+  <path d="M88 100 Q100 112 112 100" stroke="#704833" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+  <path d="M69 98 H46" stroke="#915f47" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M69 106 H44" stroke="#915f47" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M131 98 H154" stroke="#915f47" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M131 106 H156" stroke="#915f47" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M140 144 Q172 156 168 178" stroke="#d89f5e" stroke-width="10" fill="none" stroke-linecap="round"/>
+</svg>

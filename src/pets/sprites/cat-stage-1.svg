@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Cat stage 2">
+  <path d="M58 66 L78 34 L95 64" fill="#f0b775"/>
+  <path d="M142 66 L122 34 L105 64" fill="#f0b775"/>
+  <ellipse cx="100" cy="118" rx="62" ry="64" fill="#f1c48f"/>
+  <ellipse cx="100" cy="126" rx="40" ry="44" fill="#ffe3c0"/>
+  <circle cx="100" cy="74" r="43" fill="#f6d0a3"/>
+  <ellipse cx="82" cy="72" rx="11" ry="12" fill="#fff"/>
+  <ellipse cx="118" cy="72" rx="11" ry="12" fill="#fff"/>
+  <ellipse cx="84" cy="73" rx="6.8" ry="7.2" fill="#342626"/>
+  <ellipse cx="120" cy="73" rx="6.8" ry="7.2" fill="#342626"/>
+  <path d="M94 90 L100 95 L106 90" stroke="#7f543f" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M89 100 Q100 109 111 100" stroke="#7f543f" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  <ellipse cx="70" cy="132" rx="14" ry="7" fill="#f0b775" transform="rotate(-22 70 132)"/>
+  <ellipse cx="130" cy="132" rx="14" ry="7" fill="#f0b775" transform="rotate(22 130 132)"/>
+</svg>

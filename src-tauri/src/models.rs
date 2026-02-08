@@ -2,6 +2,10 @@ use serde::{Deserialize, Serialize};
 
 pub const CURRENT_SCHEMA_VERSION: u32 = 4;
 
+fn default_quest_kind() -> String {
+    "focus_sessions".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 #[serde(rename_all = "camelCase")]
@@ -10,6 +14,8 @@ pub struct PetState {
     pub animation_state: String,
     pub accessories: Vec<String>,
     pub total_pomodoros: u32,
+    pub species_id: String,
+    pub evolution_thresholds: Vec<u32>,
     pub mood: String,
     pub energy: u32,
     pub hunger: u32,
@@ -30,6 +36,8 @@ impl Default for PetState {
             animation_state: "idle".to_string(),
             accessories: vec![],
             total_pomodoros: 0,
+            species_id: "penguin".to_string(),
+            evolution_thresholds: vec![0, 5, 15],
             mood: "content".to_string(),
             energy: 80,
             hunger: 20,
@@ -59,6 +67,8 @@ pub struct PetEvent {
 #[serde(rename_all = "camelCase")]
 pub struct PetQuest {
     pub id: String,
+    #[serde(default = "default_quest_kind")]
+    pub kind: String,
     pub title: String,
     pub description: String,
     pub target_sessions: u32,
@@ -122,8 +132,22 @@ pub struct DailyGoal {
 pub struct Settings {
     pub timer_preset: String,
     pub notifications_enabled: bool,
+    pub toast_notifications_enabled: bool,
+    pub tray_badge_enabled: bool,
+    pub notification_whitelist: Vec<String>,
     pub sounds_enabled: bool,
     pub sound_volume: f32,
+    pub quiet_mode_enabled: bool,
+    pub focus_mode_enabled: bool,
+    pub animation_budget: String,
+    pub context_aware_chill_enabled: bool,
+    pub chill_on_fullscreen: bool,
+    pub chill_on_meetings: bool,
+    pub chill_on_heavy_typing: bool,
+    pub meeting_hosts: Vec<String>,
+    pub heavy_typing_threshold_cpm: u32,
+    pub enabled_seasonal_packs: Vec<String>,
+    pub validated_species_packs: Vec<String>,
     pub ui_theme: String,
     pub pet_skin: String,
     pub pet_scene: String,
@@ -138,8 +162,29 @@ impl Default for Settings {
         Self {
             timer_preset: "standard".to_string(),
             notifications_enabled: true,
+            toast_notifications_enabled: false,
+            tray_badge_enabled: true,
+            notification_whitelist: vec![
+                "session_complete".to_string(),
+                "guardrail_alert".to_string(),
+            ],
             sounds_enabled: false,
             sound_volume: 0.7,
+            quiet_mode_enabled: true,
+            focus_mode_enabled: false,
+            animation_budget: "medium".to_string(),
+            context_aware_chill_enabled: true,
+            chill_on_fullscreen: true,
+            chill_on_meetings: true,
+            chill_on_heavy_typing: true,
+            meeting_hosts: vec![
+                "zoom.us".to_string(),
+                "meet.google.com".to_string(),
+                "teams.microsoft.com".to_string(),
+            ],
+            heavy_typing_threshold_cpm: 220,
+            enabled_seasonal_packs: vec![],
+            validated_species_packs: vec!["penguin".to_string()],
             ui_theme: "sunrise".to_string(),
             pet_skin: "classic".to_string(),
             pet_scene: "meadow".to_string(),
@@ -156,8 +201,22 @@ impl Default for Settings {
 pub struct SettingsPatch {
     pub timer_preset: Option<String>,
     pub notifications_enabled: Option<bool>,
+    pub toast_notifications_enabled: Option<bool>,
+    pub tray_badge_enabled: Option<bool>,
+    pub notification_whitelist: Option<Vec<String>>,
     pub sounds_enabled: Option<bool>,
     pub sound_volume: Option<f32>,
+    pub quiet_mode_enabled: Option<bool>,
+    pub focus_mode_enabled: Option<bool>,
+    pub animation_budget: Option<String>,
+    pub context_aware_chill_enabled: Option<bool>,
+    pub chill_on_fullscreen: Option<bool>,
+    pub chill_on_meetings: Option<bool>,
+    pub chill_on_heavy_typing: Option<bool>,
+    pub meeting_hosts: Option<Vec<String>>,
+    pub heavy_typing_threshold_cpm: Option<u32>,
+    pub enabled_seasonal_packs: Option<Vec<String>>,
+    pub validated_species_packs: Option<Vec<String>>,
     pub ui_theme: Option<String>,
     pub pet_skin: Option<String>,
     pub pet_scene: Option<String>,
@@ -175,11 +234,53 @@ impl SettingsPatch {
         if let Some(notifications_enabled) = self.notifications_enabled {
             settings.notifications_enabled = notifications_enabled;
         }
+        if let Some(toast_notifications_enabled) = self.toast_notifications_enabled {
+            settings.toast_notifications_enabled = toast_notifications_enabled;
+        }
+        if let Some(tray_badge_enabled) = self.tray_badge_enabled {
+            settings.tray_badge_enabled = tray_badge_enabled;
+        }
+        if let Some(notification_whitelist) = self.notification_whitelist {
+            settings.notification_whitelist = notification_whitelist;
+        }
         if let Some(sounds_enabled) = self.sounds_enabled {
             settings.sounds_enabled = sounds_enabled;
         }
         if let Some(sound_volume) = self.sound_volume {
             settings.sound_volume = sound_volume.clamp(0.0, 1.0);
+        }
+        if let Some(quiet_mode_enabled) = self.quiet_mode_enabled {
+            settings.quiet_mode_enabled = quiet_mode_enabled;
+        }
+        if let Some(focus_mode_enabled) = self.focus_mode_enabled {
+            settings.focus_mode_enabled = focus_mode_enabled;
+        }
+        if let Some(animation_budget) = self.animation_budget {
+            settings.animation_budget = animation_budget;
+        }
+        if let Some(context_aware_chill_enabled) = self.context_aware_chill_enabled {
+            settings.context_aware_chill_enabled = context_aware_chill_enabled;
+        }
+        if let Some(chill_on_fullscreen) = self.chill_on_fullscreen {
+            settings.chill_on_fullscreen = chill_on_fullscreen;
+        }
+        if let Some(chill_on_meetings) = self.chill_on_meetings {
+            settings.chill_on_meetings = chill_on_meetings;
+        }
+        if let Some(chill_on_heavy_typing) = self.chill_on_heavy_typing {
+            settings.chill_on_heavy_typing = chill_on_heavy_typing;
+        }
+        if let Some(meeting_hosts) = self.meeting_hosts {
+            settings.meeting_hosts = meeting_hosts;
+        }
+        if let Some(heavy_typing_threshold_cpm) = self.heavy_typing_threshold_cpm {
+            settings.heavy_typing_threshold_cpm = heavy_typing_threshold_cpm;
+        }
+        if let Some(enabled_seasonal_packs) = self.enabled_seasonal_packs {
+            settings.enabled_seasonal_packs = enabled_seasonal_packs;
+        }
+        if let Some(validated_species_packs) = self.validated_species_packs {
+            settings.validated_species_packs = validated_species_packs;
         }
         if let Some(ui_theme) = self.ui_theme {
             settings.ui_theme = ui_theme;
@@ -496,6 +597,8 @@ mod tests {
             animation_state: "working".to_string(),
             accessories: vec!["party_hat".to_string(), "bow_tie".to_string()],
             total_pomodoros: 7,
+            species_id: "penguin".to_string(),
+            evolution_thresholds: vec![0, 5, 15],
             mood: "focused".to_string(),
             energy: 70,
             hunger: 30,
@@ -522,6 +625,8 @@ mod tests {
             animation_state: "celebrating".to_string(),
             accessories: vec!["sunglasses".to_string()],
             total_pomodoros: 20,
+            species_id: "penguin".to_string(),
+            evolution_thresholds: vec![0, 5, 15],
             mood: "happy".to_string(),
             energy: 92,
             hunger: 18,
@@ -699,8 +804,16 @@ mod tests {
         let s = Settings::default();
         assert_eq!(s.timer_preset, "standard");
         assert!(s.notifications_enabled);
+        assert!(!s.toast_notifications_enabled);
+        assert!(s.tray_badge_enabled);
         assert!(!s.sounds_enabled);
         assert!((s.sound_volume - 0.7).abs() < f32::EPSILON);
+        assert!(s.quiet_mode_enabled);
+        assert!(!s.focus_mode_enabled);
+        assert_eq!(s.animation_budget, "medium");
+        assert_eq!(s.heavy_typing_threshold_cpm, 220);
+        assert!(s.enabled_seasonal_packs.is_empty());
+        assert_eq!(s.validated_species_packs, vec!["penguin".to_string()]);
         assert_eq!(s.ui_theme, "sunrise");
         assert_eq!(s.pet_skin, "classic");
         assert_eq!(s.pet_scene, "meadow");
@@ -712,8 +825,17 @@ mod tests {
         let json = serde_json::to_value(&s).unwrap();
         assert!(json.get("timerPreset").is_some());
         assert!(json.get("notificationsEnabled").is_some());
+        assert!(json.get("toastNotificationsEnabled").is_some());
+        assert!(json.get("trayBadgeEnabled").is_some());
         assert!(json.get("soundsEnabled").is_some());
         assert!(json.get("soundVolume").is_some());
+        assert!(json.get("quietModeEnabled").is_some());
+        assert!(json.get("focusModeEnabled").is_some());
+        assert!(json.get("animationBudget").is_some());
+        assert!(json.get("contextAwareChillEnabled").is_some());
+        assert!(json.get("meetingHosts").is_some());
+        assert!(json.get("enabledSeasonalPacks").is_some());
+        assert!(json.get("validatedSpeciesPacks").is_some());
         assert!(json.get("uiTheme").is_some());
         assert!(json.get("petSkin").is_some());
         assert!(json.get("petScene").is_some());
@@ -727,8 +849,22 @@ mod tests {
         let original = Settings {
             timer_preset: "long".to_string(),
             notifications_enabled: false,
+            toast_notifications_enabled: true,
+            tray_badge_enabled: false,
+            notification_whitelist: vec!["session_complete".to_string()],
             sounds_enabled: true,
             sound_volume: 0.4,
+            quiet_mode_enabled: false,
+            focus_mode_enabled: true,
+            animation_budget: "low".to_string(),
+            context_aware_chill_enabled: true,
+            chill_on_fullscreen: true,
+            chill_on_meetings: false,
+            chill_on_heavy_typing: true,
+            meeting_hosts: vec!["meet.google.com".to_string()],
+            heavy_typing_threshold_cpm: 260,
+            enabled_seasonal_packs: vec!["spring-blossom".to_string()],
+            validated_species_packs: vec!["penguin".to_string(), "cat".to_string()],
             ui_theme: "dusk".to_string(),
             pet_skin: "pixel".to_string(),
             pet_scene: "forest".to_string(),
@@ -741,8 +877,30 @@ mod tests {
         let restored: Settings = serde_json::from_str(&json_str).unwrap();
         assert_eq!(restored.timer_preset, "long");
         assert!(!restored.notifications_enabled);
+        assert!(restored.toast_notifications_enabled);
+        assert!(!restored.tray_badge_enabled);
+        assert_eq!(
+            restored.notification_whitelist,
+            vec!["session_complete".to_string()]
+        );
         assert!(restored.sounds_enabled);
         assert!((restored.sound_volume - 0.4).abs() < f32::EPSILON);
+        assert!(!restored.quiet_mode_enabled);
+        assert!(restored.focus_mode_enabled);
+        assert_eq!(restored.animation_budget, "low");
+        assert_eq!(
+            restored.meeting_hosts,
+            vec!["meet.google.com".to_string()]
+        );
+        assert_eq!(restored.heavy_typing_threshold_cpm, 260);
+        assert_eq!(
+            restored.enabled_seasonal_packs,
+            vec!["spring-blossom".to_string()]
+        );
+        assert_eq!(
+            restored.validated_species_packs,
+            vec!["penguin".to_string(), "cat".to_string()]
+        );
         assert_eq!(restored.ui_theme, "dusk");
         assert_eq!(restored.pet_skin, "pixel");
         assert_eq!(restored.pet_scene, "forest");
@@ -757,8 +915,22 @@ mod tests {
         SettingsPatch {
             timer_preset: Some("short".to_string()),
             notifications_enabled: Some(false),
+            toast_notifications_enabled: Some(true),
+            tray_badge_enabled: Some(false),
+            notification_whitelist: Some(vec!["session_start".to_string()]),
             sounds_enabled: Some(true),
             sound_volume: Some(2.0),
+            quiet_mode_enabled: Some(false),
+            focus_mode_enabled: Some(true),
+            animation_budget: Some("low".to_string()),
+            context_aware_chill_enabled: Some(false),
+            chill_on_fullscreen: Some(false),
+            chill_on_meetings: Some(true),
+            chill_on_heavy_typing: Some(false),
+            meeting_hosts: Some(vec!["zoom.us".to_string()]),
+            heavy_typing_threshold_cpm: Some(260),
+            enabled_seasonal_packs: Some(vec!["spring-bloom".to_string()]),
+            validated_species_packs: Some(vec!["penguin".to_string(), "cat".to_string()]),
             ui_theme: Some("dusk".to_string()),
             pet_skin: Some("plush".to_string()),
             pet_scene: Some("forest".to_string()),
@@ -771,8 +943,22 @@ mod tests {
 
         assert_eq!(settings.timer_preset, "short");
         assert!(!settings.notifications_enabled);
+        assert!(settings.toast_notifications_enabled);
+        assert!(!settings.tray_badge_enabled);
+        assert_eq!(settings.notification_whitelist, vec!["session_start"]);
         assert!(settings.sounds_enabled);
         assert!((settings.sound_volume - 1.0).abs() < f32::EPSILON);
+        assert!(!settings.quiet_mode_enabled);
+        assert!(settings.focus_mode_enabled);
+        assert_eq!(settings.animation_budget, "low");
+        assert!(!settings.context_aware_chill_enabled);
+        assert!(!settings.chill_on_fullscreen);
+        assert!(settings.chill_on_meetings);
+        assert!(!settings.chill_on_heavy_typing);
+        assert_eq!(settings.meeting_hosts, vec!["zoom.us"]);
+        assert_eq!(settings.heavy_typing_threshold_cpm, 260);
+        assert_eq!(settings.enabled_seasonal_packs, vec!["spring-bloom"]);
+        assert_eq!(settings.validated_species_packs, vec!["penguin", "cat"]);
         assert_eq!(settings.ui_theme, "dusk");
         assert_eq!(settings.pet_skin, "plush");
         assert_eq!(settings.pet_scene, "forest");
@@ -878,6 +1064,7 @@ mod tests {
     fn pet_quest_serializes_camel_case() {
         let quest = PetQuest {
             id: "quest-1".to_string(),
+            kind: "focus_sessions".to_string(),
             title: "Focus Sprint".to_string(),
             description: "Complete focused sessions".to_string(),
             target_sessions: 2,

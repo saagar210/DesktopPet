@@ -1,5 +1,6 @@
 import { SHOP_ITEMS } from "../../lib/constants";
 import type { ShopItemId } from "../../lib/constants";
+import { getAccessoryBehaviorProfile } from "../../pets/accessoryBehavior";
 import { invokeMaybe } from "../../lib/tauri";
 import { CoinBadge } from "../shared/CoinBadge";
 
@@ -25,6 +26,7 @@ export function ShopPanel({ available, ownedAccessories }: Props) {
         {SHOP_ITEMS.map((item) => {
           const owned = ownedAccessories.includes(item.id);
           const canAfford = available >= item.cost;
+          const behaviorProfile = getAccessoryBehaviorProfile(item.id);
           return (
             <div
               key={item.id}
@@ -42,6 +44,12 @@ export function ShopPanel({ available, ownedAccessories }: Props) {
               <div className="text-sm font-medium" style={{ color: "var(--text-color)" }}>{item.name}</div>
               <div className="text-xs mb-2" style={{ color: "var(--muted-color)" }}>
                 <CoinBadge amount={item.cost} />
+              </div>
+              <div
+                className="text-[11px] mb-2 leading-snug"
+                style={{ color: "var(--muted-color)", minHeight: "2.2rem" }}
+              >
+                {behaviorProfile.shopHint}
               </div>
               {owned ? (
                 <span

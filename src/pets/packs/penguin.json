@@ -1,0 +1,31 @@
+{
+  "id": "penguin",
+  "name": "Penguin",
+  "description": "A gentle focus pal that waddles quietly beside your workflow.",
+  "stageNames": ["Pebble", "Buddy", "Aurora"],
+  "evolutionThresholds": [0, 5, 15],
+  "idleBehavior": {
+    "baseAnimation": "bounce",
+    "blinkIntervalMs": [3400, 6200]
+  },
+  "interactionVerbs": [
+    { "id": "pet", "label": "Pat" },
+    { "id": "feed", "label": "Snack" },
+    { "id": "play", "label": "Slide" },
+    { "id": "nap", "label": "Nap" },
+    { "id": "clean", "label": "Fluff" },
+    { "id": "train", "label": "Focus" }
+  ],
+  "behaviorProfile": {
+    "motionBias": "balanced",
+    "interactionCadenceMs": [540, 940],
+    "chillPosture": "settle"
+  },
+  "stageSpriteFiles": ["penguin-stage-0.svg", "penguin-stage-1.svg", "penguin-stage-2.svg"],
+  "accessoryAnchors": {
+    "head": { "x": 100, "y": 40 },
+    "neck": { "x": 100, "y": 118 },
+    "left": { "x": 48, "y": 118 },
+    "right": { "x": 152, "y": 118 }
+  }
+}

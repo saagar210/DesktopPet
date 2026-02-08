@@ -68,3 +68,177 @@
   position: absolute;
   pointer-events: none;
 }
+
+.anim-budget-low.anim-idle {
+  animation-duration: 4.8s;
+}
+
+.anim-budget-low.anim-working {
+  animation-duration: 3.8s;
+  animation-timing-function: ease-in-out;
+}
+
+.anim-budget-low.anim-break {
+  animation-duration: 5.2s;
+}
+
+.anim-budget-low.anim-celebrating {
+  animation-duration: 1.6s;
+}
+
+.anim-budget-low.anim-evolving {
+  filter: none;
+  animation-duration: 2.4s;
+}
+
+.anim-budget-medium.anim-idle {
+  animation-duration: 2.4s;
+}
+
+.anim-budget-high.anim-idle {
+  animation-duration: 1.6s;
+}
+
+.anim-budget-high.anim-working {
+  animation-duration: 1.1s;
+}
+
+.anim-budget-high.anim-break {
+  animation-duration: 2.2s;
+}
+
+.anim-budget-high.anim-celebrating {
+  animation-duration: 0.65s;
+}
+
+.chill-dim {
+  opacity: 0.66;
+  filter: saturate(0.9) brightness(0.92);
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+@keyframes species-idle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(-4px * var(--species-motion-scale, 1))); }
+}
+
+@keyframes species-idle-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(calc(1.8deg * var(--species-motion-scale, 1))); }
+}
+
+@keyframes species-idle-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(calc(1 + (0.02 * var(--species-motion-scale, 1)))); }
+}
+
+.species-float {
+  animation: species-idle-float calc(5.8s * var(--species-motion-duration, 1)) ease-in-out infinite;
+}
+
+.species-sway {
+  transform-origin: center bottom;
+  animation: species-idle-sway calc(6.2s * var(--species-motion-duration, 1)) ease-in-out infinite;
+}
+
+.species-bounce {
+  animation: species-idle-bounce calc(4.8s * var(--species-motion-duration, 1)) ease-in-out infinite;
+}
+
+.species-intensity-still {
+  --species-motion-scale: 0.2;
+  --species-motion-duration: 1.85;
+}
+
+.species-intensity-subtle {
+  --species-motion-scale: 0.55;
+  --species-motion-duration: 1.35;
+}
+
+.species-intensity-standard {
+  --species-motion-scale: 1;
+  --species-motion-duration: 1;
+}
+
+.species-intensity-lively {
+  --species-motion-scale: 1.35;
+  --species-motion-duration: 0.86;
+}
+
+.species-posture-settle {
+  transform: translateY(2px) scale(0.99);
+}
+
+.species-posture-hover {
+  transform: translateY(-1px);
+}
+
+.species-posture-curl {
+  transform: translateY(3px) scale(0.98);
+}
+
+@keyframes accessory-scarf-warmth {
+  0%, 100% { filter: saturate(1); }
+  50% { filter: saturate(1.06); }
+}
+
+@keyframes accessory-bow-twinkle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes accessory-partyhat-bop {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(1.8deg); }
+}
+
+@keyframes accessory-apple-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes accessory-cookie-glint {
+  0%, 100% { filter: saturate(1); }
+  50% { filter: saturate(1.12); }
+}
+
+.behavior-scarf {
+  animation-name: idle-bounce, accessory-scarf-warmth;
+  animation-duration: 2.4s, 6s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.behavior-bowtie {
+  transform-origin: center bottom;
+  animation-name: idle-bounce, accessory-bow-twinkle;
+  animation-duration: 2.4s, 3.2s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.behavior-partyhat {
+  transform-origin: center top;
+  animation-name: idle-bounce, accessory-partyhat-bop;
+  animation-duration: 2.4s, 4.6s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.behavior-sunglasses {
+  filter: contrast(1.02) saturate(0.94);
+}
+
+.behavior-apple {
+  animation-name: idle-bounce, accessory-apple-bob;
+  animation-duration: 2.8s, 4.6s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.behavior-cookie {
+  animation-name: idle-bounce, accessory-cookie-glint;
+  animation-duration: 2.8s, 5.1s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}

@@ -28,6 +28,7 @@ pub fn run() {
             commands::pet::set_pet_animation,
             commands::pet::pet_interact,
             commands::pet::set_pet_customization,
+            commands::pet::set_pet_species,
             commands::pet::get_pet_events,
             commands::pet::get_pet_active_quest,
             commands::pet::resolve_pet_event,
@@ -61,6 +62,7 @@ pub fn run() {
             commands::maintenance::import_app_snapshot,
             commands::maintenance::reset_app_state,
             commands::maintenance::get_app_diagnostics,
+            commands::tray::set_tray_badge,
         ])
         .setup(|app| {
             storage::ensure_schema_version(app.handle()).map_err(std::io::Error::other)?;
@@ -105,7 +107,7 @@ pub fn run() {
                 ],
             )?;
 
-            let _tray = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::with_id("main")
                 .tooltip("Desktop Pet")
                 .menu(&menu)
                 .show_menu_on_left_click(false)

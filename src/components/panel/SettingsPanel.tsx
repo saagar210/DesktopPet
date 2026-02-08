@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyTextWithFallback } from "../../lib/clipboard";
 import { TIMER_PRESETS } from "../../lib/constants";
 import type { TimerPreset } from "../../lib/constants";
 import type {
@@ -13,8 +14,20 @@ export interface SettingsPanelProps {
   settings: Settings;
   onSetPreset: (p: TimerPreset) => void;
   onSetNotificationsEnabled: (enabled: boolean) => void;
+  onSetToastNotificationsEnabled: (enabled: boolean) => void;
+  onSetTrayBadgeEnabled: (enabled: boolean) => void;
+  onSetNotificationWhitelist: (events: string[]) => void;
   onSetSoundsEnabled: (enabled: boolean) => void;
   onSetSoundVolume: (volume: number) => void;
+  onSetQuietModeEnabled: (enabled: boolean) => void;
+  onSetFocusModeEnabled: (enabled: boolean) => void;
+  onSetAnimationBudget: (budget: "low" | "medium" | "high") => void;
+  onSetContextAwareChillEnabled: (enabled: boolean) => void;
+  onSetChillOnFullscreen: (enabled: boolean) => void;
+  onSetChillOnMeetings: (enabled: boolean) => void;
+  onSetChillOnHeavyTyping: (enabled: boolean) => void;
+  onSetMeetingHosts: (hosts: string[]) => void;
+  onSetHeavyTypingThresholdCpm: (threshold: number) => void;
   onSetFocusGuardrailsEnabled: (enabled: boolean) => void;
   onSetFocusGuardrailsWorkOnly: (enabled: boolean) => void;
   onSetFocusAllowlist: (hosts: string[]) => void;
@@ -37,8 +50,20 @@ export function SettingsPanel({
   settings,
   onSetPreset,
   onSetNotificationsEnabled,
+  onSetToastNotificationsEnabled,
+  onSetTrayBadgeEnabled,
+  onSetNotificationWhitelist,
   onSetSoundsEnabled,
   onSetSoundVolume,
+  onSetQuietModeEnabled,
+  onSetFocusModeEnabled,
+  onSetAnimationBudget,
+  onSetContextAwareChillEnabled,
+  onSetChillOnFullscreen,
+  onSetChillOnMeetings,
+  onSetChillOnHeavyTyping,
+  onSetMeetingHosts,
+  onSetHeavyTypingThresholdCpm,
   onSetFocusGuardrailsEnabled,
   onSetFocusGuardrailsWorkOnly,
   onSetFocusAllowlist,
@@ -57,11 +82,22 @@ export function SettingsPanel({
   const [hostPreview, setHostPreview] = useState(settings.focusBlocklist.join(", "));
   const [opsMessage, setOpsMessage] = useState<string | null>(null);
   const [opsBusy, setOpsBusy] = useState(false);
+  const [trayFallbackCount, setTrayFallbackCount] = useState<number | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setHostPreview(settings.focusBlocklist.join(", "));
   }, [settings.focusBlocklist]);
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem("desktop-pet-tray-fallback-count");
+    if (!raw) {
+      setTrayFallbackCount(null);
+      return;
+    }
+    const count = Number(raw);
+    setTrayFallbackCount(Number.isFinite(count) ? count : null);
+  }, [settings.trayBadgeEnabled, opsMessage]);
 
   const runDataOperation = async (operation: () => Promise<string>) => {
     setOpsBusy(true);
@@ -111,7 +147,50 @@ export function SettingsPanel({
       )}
 
       <div className="pt-2 border-t flex flex-col gap-3" style={{ borderColor: "var(--border-color)" }}>
-        <h3 className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>Alerts</h3>
+        <h3 className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>
+          Calm Controls
+        </h3>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Quiet mode (default)</span>
+          <input
+            type="checkbox"
+            checked={settings.quietModeEnabled}
+            onChange={(event) => onSetQuietModeEnabled(event.target.checked)}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Focus mode</span>
+          <input
+            type="checkbox"
+            checked={settings.focusModeEnabled}
+            onChange={(event) => onSetFocusModeEnabled(event.target.checked)}
+          />
+        </label>
+        <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
+          Animation budget
+          <select
+            value={settings.animationBudget}
+            onChange={(event) =>
+              onSetAnimationBudget(event.target.value as "low" | "medium" | "high")
+            }
+            className="px-2 py-1 border rounded-md text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+              color: "var(--text-color)",
+            }}
+          >
+            <option value="low">Low (battery saver)</option>
+            <option value="medium">Medium</option>
+            <option value="high">High (more lively)</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="pt-2 border-t flex flex-col gap-3" style={{ borderColor: "var(--border-color)" }}>
+        <h3 className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>
+          Notifications
+        </h3>
         <label className="flex items-center justify-between gap-3 text-sm">
           <span style={{ color: "var(--text-color)" }}>Desktop notifications</span>
           <input
@@ -121,15 +200,56 @@ export function SettingsPanel({
           />
         </label>
         <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Toast popups (opt-in)</span>
+          <input
+            type="checkbox"
+            checked={settings.toastNotificationsEnabled}
+            onChange={(event) => onSetToastNotificationsEnabled(event.target.checked)}
+            disabled={!settings.notificationsEnabled}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Tray badge updates</span>
+          <input
+            type="checkbox"
+            checked={settings.trayBadgeEnabled}
+            onChange={(event) => onSetTrayBadgeEnabled(event.target.checked)}
+          />
+        </label>
+        <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
+          Toast whitelist (comma-separated event ids)
+          <input
+            className="px-2 py-1 border rounded-md text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+              color: "var(--text-color)",
+            }}
+            value={settings.notificationWhitelist.join(", ")}
+            onChange={(event) =>
+              onSetNotificationWhitelist(
+                event.target.value
+                  .split(",")
+                  .map((item) => item.trim().toLowerCase())
+                  .filter(Boolean)
+              )
+            }
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
           <span style={{ color: "var(--text-color)" }}>Sound cues</span>
           <input
             type="checkbox"
             checked={settings.soundsEnabled}
             onChange={(event) => onSetSoundsEnabled(event.target.checked)}
+            disabled={settings.quietModeEnabled}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className={!settings.soundsEnabled ? "opacity-50" : ""} style={{ color: "var(--text-color)" }}>
+          <span
+            className={!settings.soundsEnabled || settings.quietModeEnabled ? "opacity-50" : ""}
+            style={{ color: "var(--text-color)" }}
+          >
             Sound volume ({Math.round(settings.soundVolume * 100)}%)
           </span>
           <input
@@ -139,7 +259,81 @@ export function SettingsPanel({
             step={0.05}
             value={settings.soundVolume}
             onChange={(event) => onSetSoundVolume(Number(event.target.value))}
-            disabled={!settings.soundsEnabled}
+            disabled={!settings.soundsEnabled || settings.quietModeEnabled}
+          />
+        </label>
+      </div>
+
+      <div className="pt-2 border-t flex flex-col gap-3" style={{ borderColor: "var(--border-color)" }}>
+        <h3 className="text-sm font-medium" style={{ color: "var(--muted-color)" }}>
+          Context-aware Chill
+        </h3>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Enable auto chill</span>
+          <input
+            type="checkbox"
+            checked={settings.contextAwareChillEnabled}
+            onChange={(event) => onSetContextAwareChillEnabled(event.target.checked)}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Chill during fullscreen</span>
+          <input
+            type="checkbox"
+            checked={settings.chillOnFullscreen}
+            onChange={(event) => onSetChillOnFullscreen(event.target.checked)}
+            disabled={!settings.contextAwareChillEnabled}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Chill during meetings</span>
+          <input
+            type="checkbox"
+            checked={settings.chillOnMeetings}
+            onChange={(event) => onSetChillOnMeetings(event.target.checked)}
+            disabled={!settings.contextAwareChillEnabled}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span style={{ color: "var(--text-color)" }}>Chill during heavy typing</span>
+          <input
+            type="checkbox"
+            checked={settings.chillOnHeavyTyping}
+            onChange={(event) => onSetChillOnHeavyTyping(event.target.checked)}
+            disabled={!settings.contextAwareChillEnabled}
+          />
+        </label>
+        <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
+          Meeting hosts (comma-separated)
+          <input
+            className="px-2 py-1 border rounded-md text-sm"
+            style={{
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+              color: "var(--text-color)",
+            }}
+            value={settings.meetingHosts.join(", ")}
+            onChange={(event) =>
+              onSetMeetingHosts(
+                event.target.value
+                  .split(",")
+                  .map((item) => item.trim().toLowerCase())
+                  .filter(Boolean)
+              )
+            }
+            disabled={!settings.contextAwareChillEnabled || !settings.chillOnMeetings}
+          />
+        </label>
+        <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
+          Heavy typing threshold ({settings.heavyTypingThresholdCpm} chars/min)
+          <input
+            type="range"
+            min={80}
+            max={420}
+            step={10}
+            value={settings.heavyTypingThresholdCpm}
+            onChange={(event) => onSetHeavyTypingThresholdCpm(Number(event.target.value))}
+            disabled={!settings.contextAwareChillEnabled || !settings.chillOnHeavyTyping}
           />
         </label>
       </div>
@@ -330,16 +524,10 @@ export function SettingsPanel({
                 if (!diagnostics) {
                   return "Unable to load diagnostics";
                 }
-                const payload = JSON.stringify(diagnostics, null, 2);
-                if (navigator.clipboard?.writeText) {
-                  try {
-                    await navigator.clipboard.writeText(payload);
-                    return "Diagnostics copied to clipboard";
-                  } catch {
-                    return `Clipboard write blocked. Diagnostics: ${payload}`;
-                  }
-                }
-                return `Clipboard unavailable. Diagnostics: ${payload}`;
+                return copyTextWithFallback(
+                  JSON.stringify(diagnostics, null, 2),
+                  "Diagnostics"
+                );
               })
             }
           >
@@ -375,6 +563,18 @@ export function SettingsPanel({
             }}
           >
             {opsMessage}
+          </div>
+        )}
+        {trayFallbackCount !== null && (
+          <div
+            className="text-[11px] border rounded-md px-2 py-1"
+            style={{
+              color: "var(--muted-color)",
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            Tray title badges are unavailable on this platform. Fallback count: {trayFallbackCount}
           </div>
         )}
       </div>

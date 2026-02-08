@@ -25,6 +25,9 @@ jobs:
       - name: Run frontend tests
         run: npm test
 
+      - name: Run frontend smoke tests
+        run: npm run test:smoke
+
       - name: Run frontend build
         run: npm run build
 
@@ -46,6 +49,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run smoke tests
+        run: npm run test:smoke
 
       - name: Run Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 npm test
+npm run test:smoke
 npm run build
 cargo test --manifest-path src-tauri/Cargo.toml
 npm run tauri build

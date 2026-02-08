@@ -1,0 +1,31 @@
+{
+  "id": "axolotl",
+  "name": "Axolotl",
+  "description": "A calm little water friend with floaty gills and tiny smiles.",
+  "stageNames": ["Sprout", "Ripple", "Lumen"],
+  "evolutionThresholds": [0, 5, 14],
+  "idleBehavior": {
+    "baseAnimation": "float",
+    "blinkIntervalMs": [4800, 8400]
+  },
+  "interactionVerbs": [
+    { "id": "pet", "label": "Wave" },
+    { "id": "feed", "label": "Nibble" },
+    { "id": "play", "label": "Bubble" },
+    { "id": "nap", "label": "Drift" },
+    { "id": "clean", "label": "Splash" },
+    { "id": "train", "label": "Swim" }
+  ],
+  "behaviorProfile": {
+    "motionBias": "calm",
+    "interactionCadenceMs": [700, 1240],
+    "chillPosture": "hover"
+  },
+  "stageSpriteFiles": ["axolotl-stage-0.svg", "axolotl-stage-1.svg", "axolotl-stage-2.svg"],
+  "accessoryAnchors": {
+    "head": { "x": 100, "y": 44 },
+    "neck": { "x": 100, "y": 120 },
+    "left": { "x": 44, "y": 126 },
+    "right": { "x": 156, "y": 126 }
+  }
+}

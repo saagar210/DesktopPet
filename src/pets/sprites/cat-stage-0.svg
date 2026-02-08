@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Cat stage 1">
+  <path d="M64 72 L80 46 L92 72" fill="#f8c58f"/>
+  <path d="M136 72 L120 46 L108 72" fill="#f8c58f"/>
+  <ellipse cx="100" cy="116" rx="58" ry="60" fill="#f6cfa1"/>
+  <ellipse cx="100" cy="124" rx="38" ry="42" fill="#ffe7ca"/>
+  <circle cx="80" cy="102" r="11" fill="#fff"/>
+  <circle cx="120" cy="102" r="11" fill="#fff"/>
+  <circle cx="82" cy="103" r="6.4" fill="#3d2f2f"/>
+  <circle cx="122" cy="103" r="6.4" fill="#3d2f2f"/>
+  <path d="M95 118 L100 122 L105 118" stroke="#8a5f4a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M90 125 Q100 132 110 125" stroke="#8a5f4a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M70 118 H50" stroke="#a97964" stroke-width="2" stroke-linecap="round"/>
+  <path d="M70 124 H48" stroke="#a97964" stroke-width="2" stroke-linecap="round"/>
+  <path d="M130 118 H150" stroke="#a97964" stroke-width="2" stroke-linecap="round"/>
+  <path d="M130 124 H152" stroke="#a97964" stroke-width="2" stroke-linecap="round"/>
+</svg>

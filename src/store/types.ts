@@ -5,6 +5,8 @@ export interface PetState {
   animationState: AnimationState;
   accessories: ShopItemId[];
   totalPomodoros: number;
+  speciesId: string;
+  evolutionThresholds: number[];
   mood: string;
   energy: number;
   hunger: number;
@@ -49,8 +51,22 @@ export interface DailyGoal {
 export interface Settings {
   timerPreset: TimerPreset;
   notificationsEnabled: boolean;
+  toastNotificationsEnabled: boolean;
+  trayBadgeEnabled: boolean;
+  notificationWhitelist: string[];
   soundsEnabled: boolean;
   soundVolume: number;
+  quietModeEnabled: boolean;
+  focusModeEnabled: boolean;
+  animationBudget: "low" | "medium" | "high";
+  contextAwareChillEnabled: boolean;
+  chillOnFullscreen: boolean;
+  chillOnMeetings: boolean;
+  chillOnHeavyTyping: boolean;
+  meetingHosts: string[];
+  heavyTypingThresholdCpm: number;
+  enabledSeasonalPacks: string[];
+  validatedSpeciesPacks: string[];
   uiTheme: string;
   petSkin: string;
   petScene: string;
@@ -63,8 +79,22 @@ export interface Settings {
 export interface SettingsPatch {
   timerPreset?: TimerPreset;
   notificationsEnabled?: boolean;
+  toastNotificationsEnabled?: boolean;
+  trayBadgeEnabled?: boolean;
+  notificationWhitelist?: string[];
   soundsEnabled?: boolean;
   soundVolume?: number;
+  quietModeEnabled?: boolean;
+  focusModeEnabled?: boolean;
+  animationBudget?: "low" | "medium" | "high";
+  contextAwareChillEnabled?: boolean;
+  chillOnFullscreen?: boolean;
+  chillOnMeetings?: boolean;
+  chillOnHeavyTyping?: boolean;
+  meetingHosts?: string[];
+  heavyTypingThresholdCpm?: number;
+  enabledSeasonalPacks?: string[];
+  validatedSpeciesPacks?: string[];
   uiTheme?: string;
   petSkin?: string;
   petScene?: string;
@@ -138,6 +168,7 @@ export interface PetEvent {
 
 export interface PetQuest {
   id: string;
+  kind: string;
   title: string;
   description: string;
   targetSessions: number;

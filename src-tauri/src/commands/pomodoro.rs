@@ -6,8 +6,8 @@ use crate::events::{EVENT_COINS_CHANGED, EVENT_PET_STATE_CHANGED};
 use crate::models::{CoinBalance, PetState, PomodoroSession, UserProgress};
 
 const COINS_PER_POMODORO: u32 = 10;
-const STAGE_1_THRESHOLD: u32 = 5;
-const STAGE_2_THRESHOLD: u32 = 15;
+const DEFAULT_STAGE_1_THRESHOLD: u32 = 5;
+const DEFAULT_STAGE_2_THRESHOLD: u32 = 15;
 const MIN_WORK_DURATION_SECS: u32 = 5 * 60;
 const MAX_WORK_DURATION_SECS: u32 = 2 * 60 * 60;
 const MIN_BREAK_DURATION_SECS: u32 = 60;
@@ -19,6 +19,26 @@ fn clamp_work_duration(seconds: u32) -> u32 {
 
 fn clamp_break_duration(seconds: u32) -> u32 {
     seconds.clamp(MIN_BREAK_DURATION_SECS, MAX_BREAK_DURATION_SECS)
+}
+
+fn normalized_thresholds(raw: &[u32]) -> [u32; 3] {
+    if raw.len() < 3 {
+        return [0, DEFAULT_STAGE_1_THRESHOLD, DEFAULT_STAGE_2_THRESHOLD];
+    }
+    let stage1 = raw[1].max(1);
+    let stage2 = raw[2].max(stage1 + 1);
+    [0, stage1, stage2]
+}
+
+fn stage_for_total_pomodoros(total_pomodoros: u32, thresholds: &[u32]) -> u32 {
+    let normalized = normalized_thresholds(thresholds);
+    if total_pomodoros >= normalized[2] {
+        2
+    } else if total_pomodoros >= normalized[1] {
+        1
+    } else {
+        0
+    }
 }
 
 #[tauri::command]
@@ -104,13 +124,7 @@ pub fn complete_pomodoro(
     pet.affection = (pet.affection + 2).min(100);
     pet.animation_state = "celebrating".to_string();
 
-    let new_stage = if pet.total_pomodoros >= STAGE_2_THRESHOLD {
-        2
-    } else if pet.total_pomodoros >= STAGE_1_THRESHOLD {
-        1
-    } else {
-        0
-    };
+    let new_stage = stage_for_total_pomodoros(pet.total_pomodoros, &pet.evolution_thresholds);
 
     if new_stage > pet.current_stage {
         pet.current_stage = new_stage;
@@ -159,17 +173,17 @@ mod tests {
 
     #[test]
     fn evolution_thresholds_ordering() {
-        assert!(STAGE_1_THRESHOLD < STAGE_2_THRESHOLD);
+        assert!(DEFAULT_STAGE_1_THRESHOLD < DEFAULT_STAGE_2_THRESHOLD);
     }
 
     #[test]
     fn evolution_stage1_at_5() {
-        assert_eq!(STAGE_1_THRESHOLD, 5);
+        assert_eq!(DEFAULT_STAGE_1_THRESHOLD, 5);
     }
 
     #[test]
     fn evolution_stage2_at_15() {
-        assert_eq!(STAGE_2_THRESHOLD, 15);
+        assert_eq!(DEFAULT_STAGE_2_THRESHOLD, 15);
     }
 
     #[test]
@@ -193,66 +207,43 @@ mod tests {
 
     #[test]
     fn evolution_logic_stage0_to_stage1() {
-        let total_pomodoros = STAGE_1_THRESHOLD;
-        let new_stage = if total_pomodoros >= STAGE_2_THRESHOLD {
-            2
-        } else if total_pomodoros >= STAGE_1_THRESHOLD {
-            1
-        } else {
-            0
-        };
+        let total_pomodoros = DEFAULT_STAGE_1_THRESHOLD;
+        let new_stage = stage_for_total_pomodoros(total_pomodoros, &[0, 5, 15]);
         assert_eq!(new_stage, 1);
     }
 
     #[test]
     fn evolution_logic_stage1_to_stage2() {
-        let total_pomodoros = STAGE_2_THRESHOLD;
-        let new_stage = if total_pomodoros >= STAGE_2_THRESHOLD {
-            2
-        } else if total_pomodoros >= STAGE_1_THRESHOLD {
-            1
-        } else {
-            0
-        };
+        let total_pomodoros = DEFAULT_STAGE_2_THRESHOLD;
+        let new_stage = stage_for_total_pomodoros(total_pomodoros, &[0, 5, 15]);
         assert_eq!(new_stage, 2);
     }
 
     #[test]
     fn evolution_logic_below_stage1() {
-        let total_pomodoros = STAGE_1_THRESHOLD - 1;
-        let new_stage = if total_pomodoros >= STAGE_2_THRESHOLD {
-            2
-        } else if total_pomodoros >= STAGE_1_THRESHOLD {
-            1
-        } else {
-            0
-        };
+        let total_pomodoros = DEFAULT_STAGE_1_THRESHOLD - 1;
+        let new_stage = stage_for_total_pomodoros(total_pomodoros, &[0, 5, 15]);
         assert_eq!(new_stage, 0);
     }
 
     #[test]
     fn evolution_logic_between_stages() {
-        let total_pomodoros = STAGE_1_THRESHOLD + 3;
-        let new_stage = if total_pomodoros >= STAGE_2_THRESHOLD {
-            2
-        } else if total_pomodoros >= STAGE_1_THRESHOLD {
-            1
-        } else {
-            0
-        };
+        let total_pomodoros = DEFAULT_STAGE_1_THRESHOLD + 3;
+        let new_stage = stage_for_total_pomodoros(total_pomodoros, &[0, 5, 15]);
         assert_eq!(new_stage, 1);
     }
 
     #[test]
     fn evolution_logic_above_stage2() {
-        let total_pomodoros = STAGE_2_THRESHOLD + 100;
-        let new_stage = if total_pomodoros >= STAGE_2_THRESHOLD {
-            2
-        } else if total_pomodoros >= STAGE_1_THRESHOLD {
-            1
-        } else {
-            0
-        };
+        let total_pomodoros = DEFAULT_STAGE_2_THRESHOLD + 100;
+        let new_stage = stage_for_total_pomodoros(total_pomodoros, &[0, 5, 15]);
         assert_eq!(new_stage, 2);
+    }
+
+    #[test]
+    fn evolution_logic_supports_species_thresholds() {
+        assert_eq!(stage_for_total_pomodoros(9, &[0, 8, 20]), 1);
+        assert_eq!(stage_for_total_pomodoros(20, &[0, 8, 20]), 2);
+        assert_eq!(stage_for_total_pomodoros(2, &[0, 8, 20]), 0);
     }
 }

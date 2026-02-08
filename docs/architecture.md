@@ -11,14 +11,18 @@ Desktop Pet is a local-first macOS desktop application built with:
 
 - `pet` window (`/pet.html`)
   - Transparent always-on-top companion window.
-  - Handles visual pet interactions and drag behavior.
+  - Handles visual pet interactions, species rendering, animation budget, and chill dimming behavior.
 - `panel` window (`/panel.html`)
-  - Main control surface for timer, tasks, goals, settings, shop, and stats.
+  - Main control surface for timer, tasks, goals, settings, shop, stats, customization, and Photo Booth.
 - Rust command layer (`/src-tauri/src/commands/*`)
   - Owns all persistent state mutation.
   - Enforces validation and safe defaults.
 - Event bus (`/src-tauri/src/events.rs`)
   - Broadcasts state updates from Rust to frontend listeners.
+- Species + cosmetics packs (`/src/pets`)
+  - Data-driven species packs (`packs/*.json`) + sprite assets (`sprites/*.svg`).
+  - Behavior composer merges species profile + accessory effects + calm controls.
+  - Optional seasonal pack metadata (`seasonal/*.json`) activated only by user opt-in.
 
 ## Data Flow
 
@@ -46,6 +50,8 @@ Primary persisted keys:
 - `pet_active_quest`
 - `focus_guardrail_events`
 - `schema_version`
+- calm-control settings (`quiet mode`, `focus mode`, `animation budget`, `context-aware chill`)
+- optional seasonal pack activation list
 
 Startup hardening in `storage::ensure_schema_version` ensures baseline keys exist for core safety-critical state.
 
@@ -71,6 +77,7 @@ These support local backup/restore, reset, and support diagnostics without exter
 Canonical commands:
 
 - `npm test`
+- `npm run test:smoke`
 - `npm run build`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`
