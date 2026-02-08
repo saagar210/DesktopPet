@@ -26,11 +26,7 @@ fn cap_len<T>(values: &mut Vec<T>, max_len: usize) {
 fn sanitize_snapshot(mut snapshot: AppSnapshot) -> AppSnapshot {
     snapshot.schema_version = CURRENT_SCHEMA_VERSION;
 
-    snapshot.settings.sound_volume = if snapshot.settings.sound_volume.is_finite() {
-        snapshot.settings.sound_volume.clamp(0.0, 1.0)
-    } else {
-        0.7
-    };
+    crate::commands::settings::sanitize_settings(&mut snapshot.settings);
 
     snapshot.tasks.retain(|task| !task.title.trim().is_empty());
     for task in &mut snapshot.tasks {
@@ -259,5 +255,40 @@ mod tests {
         let sanitized = sanitize_snapshot(snapshot);
         assert_eq!(sanitized.timer_runtime.total_seconds, 3 * 60 * 60);
         assert_eq!(sanitized.timer_runtime.seconds_left, 3 * 60 * 60);
+    }
+
+    #[test]
+    fn sanitize_snapshot_normalizes_settings() {
+        let mut snapshot = AppSnapshot::default();
+        snapshot.settings.timer_preset = "very-long".to_string();
+        snapshot.settings.ui_theme = "neon".to_string();
+        snapshot.settings.pet_skin = "retro".to_string();
+        snapshot.settings.pet_scene = "moon".to_string();
+        snapshot.settings.sound_volume = f32::NAN;
+        snapshot.settings.focus_allowlist = vec![
+            "https://Docs.YouTube.com/watch?v=1".to_string(),
+            "docs.youtube.com".to_string(),
+            "bad host".to_string(),
+        ];
+        snapshot.settings.focus_blocklist = vec![
+            "Example.com".to_string(),
+            "https://example.com/path".to_string(),
+            "bad*host".to_string(),
+        ];
+
+        let sanitized = sanitize_snapshot(snapshot);
+        assert_eq!(sanitized.settings.timer_preset, "standard");
+        assert_eq!(sanitized.settings.ui_theme, "sunrise");
+        assert_eq!(sanitized.settings.pet_skin, "classic");
+        assert_eq!(sanitized.settings.pet_scene, "meadow");
+        assert_eq!(sanitized.settings.sound_volume, 0.7);
+        assert_eq!(
+            sanitized.settings.focus_allowlist,
+            vec!["docs.youtube.com".to_string()]
+        );
+        assert_eq!(
+            sanitized.settings.focus_blocklist,
+            vec!["example.com".to_string()]
+        );
     }
 }

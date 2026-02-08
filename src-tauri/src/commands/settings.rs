@@ -69,7 +69,7 @@ fn normalize_host_list(input: Vec<String>) -> Vec<String> {
     output
 }
 
-fn sanitize_loaded_settings(settings: &mut Settings) {
+pub(crate) fn sanitize_settings(settings: &mut Settings) {
     if !is_allowed(&settings.timer_preset, ALLOWED_PRESETS) {
         settings.timer_preset = "standard".to_string();
     }
@@ -135,7 +135,7 @@ fn load_settings(app: &AppHandle) -> Result<Settings, String> {
         .get("settings")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
-    sanitize_loaded_settings(&mut settings);
+    sanitize_settings(&mut settings);
     Ok(settings)
 }
 
@@ -156,7 +156,7 @@ pub fn update_settings(
     let patch_copy = patch.clone();
     let mut settings = load_settings(&app)?;
     patch.apply_to(&mut settings);
-    sanitize_loaded_settings(&mut settings);
+    sanitize_settings(&mut settings);
 
     store.set("settings", json!(settings));
     let _ = app.emit(EVENT_SETTINGS_CHANGED, &settings);

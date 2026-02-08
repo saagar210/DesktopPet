@@ -64,6 +64,24 @@ fn sanitize_loadout(mut loadout: CustomizationLoadout) -> Result<CustomizationLo
     Ok(loadout)
 }
 
+fn upsert_loadout(
+    mut loadouts: Vec<CustomizationLoadout>,
+    loadout: CustomizationLoadout,
+) -> Vec<CustomizationLoadout> {
+    loadouts.retain(|item| !item.name.trim().is_empty());
+
+    if let Some(existing) = loadouts.iter_mut().find(|item| item.name == loadout.name) {
+        *existing = loadout;
+        return loadouts;
+    }
+
+    if loadouts.len() >= MAX_LOADOUTS {
+        loadouts.remove(0);
+    }
+    loadouts.push(loadout);
+    loadouts
+}
+
 fn load_settings(app: &AppHandle) -> Result<Settings, String> {
     crate::commands::settings::get_settings(app.clone())
 }
@@ -79,10 +97,11 @@ fn load_pet(app: &AppHandle) -> Result<PetState, String> {
 #[tauri::command]
 pub fn get_customization_loadouts(app: AppHandle) -> Result<Vec<CustomizationLoadout>, String> {
     let store = app.store("store.json").map_err(|e| e.to_string())?;
-    let loadouts = store
+    let mut loadouts: Vec<CustomizationLoadout> = store
         .get("customization_loadouts")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
+    loadouts.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Ok(loadouts)
 }
 
@@ -95,24 +114,20 @@ pub fn save_customization_loadout(
     let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let store = app.store("store.json").map_err(|e| e.to_string())?;
     let loadout = sanitize_loadout(loadout)?;
-    let mut loadouts: Vec<CustomizationLoadout> = store
+    let loadouts: Vec<CustomizationLoadout> = store
         .get("customization_loadouts")
         .and_then(|v| serde_json::from_value(v).ok())
         .unwrap_or_default();
-    loadouts.retain(|item| !item.name.trim().is_empty());
-
-    if let Some(existing) = loadouts.iter_mut().find(|item| item.name == loadout.name) {
-        *existing = loadout;
-    } else {
-        if loadouts.len() >= MAX_LOADOUTS {
-            loadouts.remove(0);
-        }
-        loadouts.push(loadout);
-    }
-
-    loadouts.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    let loadouts = upsert_loadout(loadouts, loadout);
     store.set("customization_loadouts", json!(loadouts));
-    Ok(loadouts)
+    let mut sorted: Vec<CustomizationLoadout> = store
+        .get("customization_loadouts")
+        .and_then(|v| serde_json::from_value(v).ok())
+        .unwrap_or_default();
+    sorted.sort_by(|a: &CustomizationLoadout, b: &CustomizationLoadout| {
+        a.name.to_lowercase().cmp(&b.name.to_lowercase())
+    });
+    Ok(sorted)
 }
 
 #[tauri::command]
@@ -153,7 +168,7 @@ pub fn apply_customization_loadout(
 
 #[cfg(test)]
 mod tests {
-    use super::{sanitize_accessories, sanitize_loadout};
+    use super::{sanitize_accessories, sanitize_loadout, upsert_loadout};
     use crate::models::CustomizationLoadout;
 
     #[test]
@@ -177,5 +192,34 @@ mod tests {
         };
         let sanitized = sanitize_loadout(loadout).unwrap();
         assert_eq!(sanitized.name, "Cozy");
+    }
+
+    #[test]
+    fn upsert_loadout_preserves_fifo_for_eviction() {
+        let mut loadouts = Vec::new();
+        for i in 0..40 {
+            loadouts.push(CustomizationLoadout {
+                name: format!("loadout-{i}"),
+                ui_theme: "sunrise".to_string(),
+                pet_skin: "classic".to_string(),
+                pet_scene: "meadow".to_string(),
+                accessories: vec![],
+            });
+        }
+
+        let updated = upsert_loadout(
+            loadouts,
+            CustomizationLoadout {
+                name: "new-entry".to_string(),
+                ui_theme: "sunrise".to_string(),
+                pet_skin: "classic".to_string(),
+                pet_scene: "meadow".to_string(),
+                accessories: vec![],
+            },
+        );
+
+        assert_eq!(updated.len(), 40);
+        assert_eq!(updated.first().map(|v| v.name.as_str()), Some("loadout-1"));
+        assert_eq!(updated.last().map(|v| v.name.as_str()), Some("new-entry"));
     }
 }
