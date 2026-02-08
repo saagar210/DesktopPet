@@ -87,6 +87,7 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - [Debugging](./docs/debugging.md)
 - [Operations Runbook](./docs/operations.md)
 - [Release Process](./docs/release.md)
+- [Manual QA Checklist](./docs/manual-qa-checklist.md)
 - [Implementation Status](./docs/implementation-status.md)
 - [Next Phases Detailed Plan](./docs/next-phases-detailed-plan.md)
 - [Contributing](./CONTRIBUTING.md)

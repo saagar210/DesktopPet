@@ -21,6 +21,7 @@ Desktop Pet is a local-first macOS desktop application built with:
   - Broadcasts state updates from Rust to frontend listeners.
 - Species + cosmetics packs (`/src/pets`)
   - Data-driven species packs (`packs/*.json`) + sprite assets (`sprites/*.svg`).
+  - Behavior composer merges species profile + accessory effects + calm controls.
   - Optional seasonal pack metadata (`seasonal/*.json`) activated only by user opt-in.
 
 ## Data Flow

@@ -27,6 +27,11 @@ Sprites are loaded from `src/pets/sprites/*.svg`, `*.png`, or `*.webp`.
     { "id": "clean", "label": "Brush" },
     { "id": "train", "label": "Trick" }
   ],
+  "behaviorProfile": {
+    "motionBias": "calm",
+    "interactionCadenceMs": [620, 1180],
+    "chillPosture": "curl"
+  },
   "stageSpriteFiles": ["cat-stage-0.svg", "cat-stage-1.svg", "cat-stage-2.svg"],
   "accessoryAnchors": {
     "head": { "x": 100, "y": 34 },
@@ -48,6 +53,12 @@ Canonical validation metadata (rule ids, labels, remediation text) is defined in
 - `blink-window`: blink interval min must be `>= 1200` and max must be greater than min.
 - `anchors`: 0-200 coordinate space matching sprite viewbox expectations.
 - `verbs`: include `pet`, `feed`, `play`, `nap`, `clean`, and `train`.
+- `behavior-profile`: `interactionCadenceMs` must be `[fast, slow]` where `250<=fast<=slow<=5000` and `chillPosture` is `settle`, `hover`, or `curl`.
+
+## Behavior Profile Semantics
+- `motionBias`: controls baseline motion preference (`calm`, `balanced`, `playful`).
+- `interactionCadenceMs`: controls minimum tap/pat interaction cooldown in normal and chill states.
+- `chillPosture`: controls subtle resting posture during focus/quiet/context chill.
 
 ## Seasonal Packs
 Optional seasonal cosmetics are loaded from `src/pets/seasonal/*.json` and enabled explicitly by user settings.

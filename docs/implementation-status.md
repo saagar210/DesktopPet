@@ -9,6 +9,8 @@ This repository has completed the following hardening phases:
 - Phase 4: release hardening and distribution workflow
 - Phase 5: product recovery operations (backup/import/reset/diagnostics)
 - Phase 6: documentation and contributor closure
+- Phase 7: pack authoring UX + validation hardening
+- Phase 8: behavior composer + accessory personality layer
 
 See supporting docs in `/docs` for implementation details.
 
