@@ -7,7 +7,8 @@ export type PackValidationRuleId =
   | "sprites"
   | "blink-window"
   | "anchors"
-  | "verbs";
+  | "verbs"
+  | "behavior-profile";
 
 interface PackValidationRuleSpec {
   label: string;
@@ -47,6 +48,11 @@ export const PACK_VALIDATION_RULEBOOK: Record<PackValidationRuleId, PackValidati
     label: "All core interaction verbs are present",
     remediation:
       "Include these verbs in interactionVerbs: pet, feed, play, nap, clean, train.",
+  },
+  "behavior-profile": {
+    label: "Behavior profile cadence and posture are valid",
+    remediation:
+      "Set interactionCadenceMs to [fast, slow] with 250<=fast<=slow<=5000 and choose posture settle/hover/curl.",
   },
 };
 
@@ -145,6 +151,19 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
         verbs.has("clean") &&
         verbs.has("train"),
       `${verbs.size} verbs`
+    )
+  );
+
+  const cadence = pack.behaviorProfile.interactionCadenceMs;
+  const posture = pack.behaviorProfile.chillPosture;
+  checks.push(
+    makeCheck(
+      "behavior-profile",
+      cadence[0] >= 250 &&
+        cadence[1] >= cadence[0] &&
+        cadence[1] <= 5000 &&
+        (posture === "settle" || posture === "hover" || posture === "curl"),
+      `${cadence[0]}-${cadence[1]}ms / ${posture}`
     )
   );
 

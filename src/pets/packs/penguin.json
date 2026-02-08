@@ -16,6 +16,11 @@
     { "id": "clean", "label": "Fluff" },
     { "id": "train", "label": "Focus" }
   ],
+  "behaviorProfile": {
+    "motionBias": "balanced",
+    "interactionCadenceMs": [540, 940],
+    "chillPosture": "settle"
+  },
   "stageSpriteFiles": ["penguin-stage-0.svg", "penguin-stage-1.svg", "penguin-stage-2.svg"],
   "accessoryAnchors": {
     "head": { "x": 100, "y": 40 },

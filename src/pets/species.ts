@@ -12,6 +12,11 @@ export interface PetSpeciesPack {
     id: "pet" | "feed" | "play" | "nap" | "clean" | "train";
     label: string;
   }>;
+  behaviorProfile: {
+    motionBias: "calm" | "balanced" | "playful";
+    interactionCadenceMs: [number, number];
+    chillPosture: "settle" | "hover" | "curl";
+  };
   stageSprites: [string, string, string];
   accessoryAnchors: {
     head: { x: number; y: number };
@@ -35,6 +40,7 @@ interface RawSpeciesPack {
     id: "pet" | "feed" | "play" | "nap" | "clean" | "train";
     label: string;
   }>;
+  behaviorProfile?: PetSpeciesPack["behaviorProfile"];
   stageSpriteFiles: [string, string, string];
   accessoryAnchors: PetSpeciesPack["accessoryAnchors"];
 }
@@ -77,6 +83,14 @@ function normalizePack(input: RawSpeciesPack): PetSpeciesPack {
     resolveSprite(input.stageSpriteFiles[1]),
     resolveSprite(input.stageSpriteFiles[2]),
   ];
+  const defaultProfile: PetSpeciesPack["behaviorProfile"] = {
+    motionBias: "balanced",
+    interactionCadenceMs: [500, 900],
+    chillPosture: "settle",
+  };
+  const behaviorProfile = input.behaviorProfile ?? defaultProfile;
+  const cadenceFast = Math.max(250, Math.min(3000, behaviorProfile.interactionCadenceMs[0]));
+  const cadenceSlow = Math.max(cadenceFast, Math.min(5000, behaviorProfile.interactionCadenceMs[1]));
 
   return {
     id: input.id.trim().toLowerCase(),
@@ -86,6 +100,11 @@ function normalizePack(input: RawSpeciesPack): PetSpeciesPack {
     evolutionThresholds: normalizeThresholds(input.evolutionThresholds),
     idleBehavior: input.idleBehavior,
     interactionVerbs: input.interactionVerbs,
+    behaviorProfile: {
+      motionBias: behaviorProfile.motionBias,
+      interactionCadenceMs: [cadenceFast, cadenceSlow],
+      chillPosture: behaviorProfile.chillPosture,
+    },
     stageSprites,
     accessoryAnchors: input.accessoryAnchors,
   };

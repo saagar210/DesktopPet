@@ -16,6 +16,11 @@
     { "id": "clean", "label": "Brush" },
     { "id": "train", "label": "Heel" }
   ],
+  "behaviorProfile": {
+    "motionBias": "playful",
+    "interactionCadenceMs": [460, 860],
+    "chillPosture": "hover"
+  },
   "stageSpriteFiles": ["corgi-stage-0.svg", "corgi-stage-1.svg", "corgi-stage-2.svg"],
   "accessoryAnchors": {
     "head": { "x": 100, "y": 38 },

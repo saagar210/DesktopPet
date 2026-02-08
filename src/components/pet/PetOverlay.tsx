@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { EVENT_PET_STATE_CHANGED, EVENT_SETTINGS_CHANGED } from "../../lib/events";
 import { listenForChillSignals } from "../../lib/chill";
 import { invokeMaybe, invokeOr, listenSafe, startDraggingSafe } from "../../lib/tauri";
+import { composePetBehavior } from "../../pets/behaviorComposer";
+import { getSpeciesPackById } from "../../pets/species";
 import type { PetState, Settings } from "../../store/types";
 import { PetCharacter } from "./PetCharacter";
 
@@ -27,15 +29,17 @@ export function PetOverlay() {
   });
   const [settings, setSettings] = useState<Pick<
     Settings,
-    "animationBudget" | "contextAwareChillEnabled" | "focusModeEnabled"
+    "animationBudget" | "contextAwareChillEnabled" | "focusModeEnabled" | "quietModeEnabled"
   >>({
     animationBudget: "medium",
     contextAwareChillEnabled: true,
     focusModeEnabled: false,
+    quietModeEnabled: true,
   });
   const [isContextChilled, setIsContextChilled] = useState(false);
-  const [animOverride, setAnimOverride] = useState<string | null>(null);
+  const [animOverride, setAnimOverride] = useState<PetState["animationState"] | null>(null);
   const clickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastInteractionAtRef = useRef(0);
 
   useEffect(() => {
     invokeOr<PetState>(
@@ -116,6 +120,7 @@ export function PetOverlay() {
         animationBudget: loaded.animationBudget,
         contextAwareChillEnabled: loaded.contextAwareChillEnabled,
         focusModeEnabled: loaded.focusModeEnabled,
+        quietModeEnabled: loaded.quietModeEnabled,
       })
     );
 
@@ -126,6 +131,7 @@ export function PetOverlay() {
         animationBudget: event.payload.animationBudget,
         contextAwareChillEnabled: event.payload.contextAwareChillEnabled,
         focusModeEnabled: event.payload.focusModeEnabled,
+        quietModeEnabled: event.payload.quietModeEnabled,
       });
     }).then((fn) => {
       if (cancelled) {
@@ -149,15 +155,31 @@ export function PetOverlay() {
     });
   }, []);
 
+  const species = getSpeciesPackById(pet.speciesId);
+  const contextChilled = settings.contextAwareChillEnabled && isContextChilled;
+  const composedBehavior = composePetBehavior({
+    species,
+    accessories: pet.accessories,
+    animationState: (animOverride ?? pet.animationState),
+    animationBudget: settings.animationBudget,
+    quietModeEnabled: settings.quietModeEnabled,
+    focusModeEnabled: settings.focusModeEnabled,
+    contextChilled,
+  });
+
   const handleClick = useCallback(() => {
     setAnimOverride("clicked");
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
     }
     clickTimeoutRef.current = setTimeout(() => setAnimOverride(null), 400);
-    // Quick pat interaction on click
+    const now = Date.now();
+    if (now - lastInteractionAtRef.current < composedBehavior.interactionCooldownMs) {
+      return;
+    }
+    lastInteractionAtRef.current = now;
     void invokeMaybe<PetState>("pet_interact", { action: "pet" });
-  }, []);
+  }, [composedBehavior.interactionCooldownMs]);
 
   const handleDrag = useCallback(() => {
     startDraggingSafe();
@@ -172,9 +194,7 @@ export function PetOverlay() {
     []
   );
 
-  const shouldChill = settings.contextAwareChillEnabled && isContextChilled;
-  const currentAnim = shouldChill ? "idle" : animOverride ?? pet.animationState;
-  const animClass = `anim-${currentAnim}`;
+  const animClass = `anim-${composedBehavior.animationState}`;
   const budgetClass = `anim-budget-${settings.animationBudget}`;
   const skinClass =
     pet.skin === "neon"
@@ -184,14 +204,6 @@ export function PetOverlay() {
         : pet.skin === "plush"
           ? "brightness-95 saturate-75"
           : "";
-  const accessoryBehaviorClasses = [
-    pet.accessories.includes("scarf") ? "behavior-scarf" : "",
-    pet.accessories.includes("sunglasses") ? "behavior-sunglasses" : "",
-    pet.accessories.includes("bow_tie") ? "behavior-bowtie" : "",
-    pet.accessories.includes("party_hat") ? "behavior-partyhat" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <div
@@ -200,14 +212,17 @@ export function PetOverlay() {
       onMouseDown={handleDrag}
     >
       <div
-        className={`${animClass} ${budgetClass} ${skinClass} ${shouldChill ? "chill-dim" : ""}`}
+        className={`${animClass} ${budgetClass} ${skinClass} ${composedBehavior.speciesIntensityClass} ${composedBehavior.shouldDim ? "chill-dim" : ""}`}
       >
-        <div className={accessoryBehaviorClasses}>
-          <PetCharacter
-            stage={pet.currentStage}
-            accessories={pet.accessories}
-            speciesId={pet.speciesId}
-          />
+        <div className={composedBehavior.postureClass}>
+          <div className={composedBehavior.accessoryClasses}>
+            <PetCharacter
+              stage={pet.currentStage}
+              accessories={pet.accessories}
+              speciesId={pet.speciesId}
+              speciesMotionClass={composedBehavior.speciesMotionClass}
+            />
+          </div>
         </div>
       </div>
     </div>

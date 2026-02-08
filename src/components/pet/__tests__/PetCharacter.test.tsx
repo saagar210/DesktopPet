@@ -42,4 +42,17 @@ describe("PetCharacter", () => {
     );
     expect(container.textContent).toContain("🎉");
   });
+
+  it("accepts composed species motion classes", () => {
+    const { container } = render(
+      <PetCharacter
+        stage={0}
+        accessories={[]}
+        speciesId="penguin"
+        speciesMotionClass="species-float"
+      />
+    );
+    const image = container.querySelector("img");
+    expect(image?.className).toContain("species-float");
+  });
 });

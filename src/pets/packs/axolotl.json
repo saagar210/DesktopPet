@@ -16,6 +16,11 @@
     { "id": "clean", "label": "Splash" },
     { "id": "train", "label": "Swim" }
   ],
+  "behaviorProfile": {
+    "motionBias": "calm",
+    "interactionCadenceMs": [700, 1240],
+    "chillPosture": "hover"
+  },
   "stageSpriteFiles": ["axolotl-stage-0.svg", "axolotl-stage-1.svg", "axolotl-stage-2.svg"],
   "accessoryAnchors": {
     "head": { "x": 100, "y": 44 },

@@ -5,6 +5,7 @@ interface Props {
   stage: number;
   accessories: ShopItemId[];
   speciesId: string;
+  speciesMotionClass?: string;
 }
 
 const ACCESSORY_GLYPHS: Record<ShopItemId, string> = {
@@ -27,16 +28,17 @@ function anchorForAccessory(
   return anchors.head;
 }
 
-export function PetCharacter({ stage, accessories, speciesId }: Props) {
+export function PetCharacter({ stage, accessories, speciesId, speciesMotionClass }: Props) {
   const species = getSpeciesPackById(speciesId);
   const stageIndex = Math.max(0, Math.min(2, stage));
+  const motionClass = speciesMotionClass ?? `species-${species.idleBehavior.baseAnimation}`;
 
   return (
     <div className="relative w-[220px] h-[220px] flex items-center justify-center">
       <img
         src={species.stageSprites[stageIndex]}
         alt={`${species.name} stage ${stageIndex + 1}`}
-        className={`w-[210px] h-[210px] object-contain drop-shadow-[0_10px_14px_rgba(15,23,42,0.14)] species-${species.idleBehavior.baseAnimation}`}
+        className={`w-[210px] h-[210px] object-contain drop-shadow-[0_10px_14px_rgba(15,23,42,0.14)] ${motionClass}`}
       />
       {accessories.map((accessory) => {
         const anchor = anchorForAccessory(accessory, species.accessoryAnchors);

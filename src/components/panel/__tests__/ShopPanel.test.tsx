@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ShopPanel } from "../ShopPanel";
 import { invoke } from "@tauri-apps/api/core";
 import { SHOP_ITEMS } from "../../../lib/constants";
+import { getAccessoryBehaviorProfile } from "../../../pets/accessoryBehavior";
 
 vi.mocked(invoke).mockResolvedValue(undefined);
 
@@ -67,6 +68,13 @@ describe("ShopPanel", () => {
     render(<ShopPanel available={100} ownedAccessories={[]} />);
     for (const item of SHOP_ITEMS) {
       expect(screen.getByText(item.icon)).toBeInTheDocument();
+    }
+  });
+
+  it("shows accessory behavior hints", () => {
+    render(<ShopPanel available={100} ownedAccessories={[]} />);
+    for (const item of SHOP_ITEMS) {
+      expect(screen.getByText(getAccessoryBehaviorProfile(item.id).shopHint)).toBeInTheDocument();
     }
   });
 });

@@ -16,6 +16,11 @@
     { "id": "clean", "label": "Brush" },
     { "id": "train", "label": "Trick" }
   ],
+  "behaviorProfile": {
+    "motionBias": "calm",
+    "interactionCadenceMs": [620, 1180],
+    "chillPosture": "curl"
+  },
   "stageSpriteFiles": ["cat-stage-0.svg", "cat-stage-1.svg", "cat-stage-2.svg"],
   "accessoryAnchors": {
     "head": { "x": 100, "y": 34 },

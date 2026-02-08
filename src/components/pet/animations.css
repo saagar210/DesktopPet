@@ -119,30 +119,62 @@
 
 @keyframes species-idle-float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(calc(-4px * var(--species-motion-scale, 1))); }
 }
 
 @keyframes species-idle-sway {
   0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(1.8deg); }
+  50% { transform: rotate(calc(1.8deg * var(--species-motion-scale, 1))); }
 }
 
 @keyframes species-idle-bounce {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  50% { transform: scale(calc(1 + (0.02 * var(--species-motion-scale, 1)))); }
 }
 
 .species-float {
-  animation: species-idle-float 5.8s ease-in-out infinite;
+  animation: species-idle-float calc(5.8s * var(--species-motion-duration, 1)) ease-in-out infinite;
 }
 
 .species-sway {
   transform-origin: center bottom;
-  animation: species-idle-sway 6.2s ease-in-out infinite;
+  animation: species-idle-sway calc(6.2s * var(--species-motion-duration, 1)) ease-in-out infinite;
 }
 
 .species-bounce {
-  animation: species-idle-bounce 4.8s ease-in-out infinite;
+  animation: species-idle-bounce calc(4.8s * var(--species-motion-duration, 1)) ease-in-out infinite;
+}
+
+.species-intensity-still {
+  --species-motion-scale: 0.2;
+  --species-motion-duration: 1.85;
+}
+
+.species-intensity-subtle {
+  --species-motion-scale: 0.55;
+  --species-motion-duration: 1.35;
+}
+
+.species-intensity-standard {
+  --species-motion-scale: 1;
+  --species-motion-duration: 1;
+}
+
+.species-intensity-lively {
+  --species-motion-scale: 1.35;
+  --species-motion-duration: 0.86;
+}
+
+.species-posture-settle {
+  transform: translateY(2px) scale(0.99);
+}
+
+.species-posture-hover {
+  transform: translateY(-1px);
+}
+
+.species-posture-curl {
+  transform: translateY(3px) scale(0.98);
 }
 
 @keyframes accessory-scarf-warmth {
@@ -158,6 +190,16 @@
 @keyframes accessory-partyhat-bop {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(1.8deg); }
+}
+
+@keyframes accessory-apple-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+@keyframes accessory-cookie-glint {
+  0%, 100% { filter: saturate(1); }
+  50% { filter: saturate(1.12); }
 }
 
 .behavior-scarf {
@@ -185,4 +227,18 @@
 
 .behavior-sunglasses {
   filter: contrast(1.02) saturate(0.94);
+}
+
+.behavior-apple {
+  animation-name: idle-bounce, accessory-apple-bob;
+  animation-duration: 2.8s, 4.6s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+.behavior-cookie {
+  animation-name: idle-bounce, accessory-cookie-glint;
+  animation-duration: 2.8s, 5.1s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
 }
