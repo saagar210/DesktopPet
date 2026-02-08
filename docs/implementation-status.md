@@ -11,6 +11,7 @@ This repository has completed the following hardening phases:
 - Phase 6: documentation and contributor closure
 - Phase 7: pack authoring UX + validation hardening
 - Phase 8: behavior composer + accessory personality layer
+- Phase 9: progression 2.0 (in progress)
 
 See supporting docs in `/docs` for implementation details.
 
