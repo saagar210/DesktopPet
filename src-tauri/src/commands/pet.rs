@@ -7,6 +7,9 @@ use crate::models::{CoinBalance, PetEvent, PetQuest, PetState};
 
 const MAX_PET_EVENTS: usize = 30;
 const MAX_SPECIES_ID_CHARS: usize = 48;
+const QUEST_ROLL_COOLDOWN_SECS: i64 = 20 * 60;
+const QUEST_LAST_KIND_KEY: &str = "pet_last_quest_kind";
+const QUEST_LAST_ROLL_KEY: &str = "pet_last_quest_roll_at";
 const ALLOWED_ANIMATIONS: &[&str] = &[
     "idle",
     "working",
@@ -138,13 +141,19 @@ fn quest_reward_for_stage(stage: u32) -> u32 {
 }
 
 #[derive(Clone, Copy)]
+enum QuestProgressKind {
+    Focus,
+    Care,
+}
+
+#[derive(Clone, Copy)]
 struct QuestTemplate {
     kind: &'static str,
     title: &'static str,
     description: &'static str,
 }
 
-const QUEST_TEMPLATES: [QuestTemplate; 2] = [
+const QUEST_TEMPLATES: [QuestTemplate; 4] = [
     QuestTemplate {
         kind: "focus_sessions",
         title: "Steady Focus",
@@ -152,23 +161,48 @@ const QUEST_TEMPLATES: [QuestTemplate; 2] = [
     },
     QuestTemplate {
         kind: "care_actions",
-        title: "Gentle Care",
-        description: "Do small care actions to keep your companion cozy.",
+        title: "Hydration Habit",
+        description: "Use gentle care actions to keep your companion nourished.",
+    },
+    QuestTemplate {
+        kind: "balanced_routine",
+        title: "Balanced Rhythm",
+        description: "Mix focus sessions and care actions for a calm routine.",
+    },
+    QuestTemplate {
+        kind: "mindful_reset",
+        title: "Mindful Reset",
+        description: "Use short care resets between work blocks to recharge calmly.",
     },
 ];
 
-fn create_quest_for_pet(pet: &PetState) -> PetQuest {
-    let template = QUEST_TEMPLATES[(pet.total_pomodoros as usize) % QUEST_TEMPLATES.len()];
+fn quest_accepts_progress(kind: &str, progress_kind: QuestProgressKind) -> bool {
+    match kind {
+        "focus_sessions" => matches!(progress_kind, QuestProgressKind::Focus),
+        "care_actions" | "mindful_reset" => matches!(progress_kind, QuestProgressKind::Care),
+        "balanced_routine" => true,
+        _ => false,
+    }
+}
+
+fn create_quest_for_pet(pet: &PetState, last_quest_kind: Option<&str>) -> PetQuest {
+    let offset = (pet.total_pomodoros + pet.current_stage) as usize % QUEST_TEMPLATES.len();
+    let template = (0..QUEST_TEMPLATES.len())
+        .map(|step| QUEST_TEMPLATES[(offset + step) % QUEST_TEMPLATES.len()])
+        .find(|candidate| Some(candidate.kind) != last_quest_kind)
+        .unwrap_or(QUEST_TEMPLATES[offset]);
     let stage_target = quest_target_for_stage(pet.current_stage);
-    let target_sessions = if template.kind == "care_actions" {
-        stage_target + 1
-    } else {
-        stage_target
+    let target_sessions = match template.kind {
+        "care_actions" => stage_target + 1,
+        "balanced_routine" => stage_target + 1,
+        "mindful_reset" => stage_target + 2,
+        _ => stage_target,
     };
-    let reward = if template.kind == "care_actions" {
-        quest_reward_for_stage(pet.current_stage).saturating_sub(2).max(8)
-    } else {
-        quest_reward_for_stage(pet.current_stage)
+    let reward = match template.kind {
+        "care_actions" => quest_reward_for_stage(pet.current_stage).saturating_sub(2).max(8),
+        "balanced_routine" => quest_reward_for_stage(pet.current_stage).saturating_add(2),
+        "mindful_reset" => quest_reward_for_stage(pet.current_stage).saturating_add(1),
+        _ => quest_reward_for_stage(pet.current_stage),
     };
 
     PetQuest {
@@ -185,15 +219,65 @@ fn create_quest_for_pet(pet: &PetState) -> PetQuest {
 
 fn apply_quest_progress(
     mut quest: PetQuest,
-    supported_kind: &str,
+    progress_kind: QuestProgressKind,
     delta: u32,
 ) -> (PetQuest, bool, bool) {
-    if quest.kind != supported_kind {
+    if !quest_accepts_progress(&quest.kind, progress_kind) {
         return (quest, false, false);
     }
     quest.completed_sessions = quest.completed_sessions.saturating_add(delta);
     let completed = quest.completed_sessions >= quest.target_sessions;
     (quest, true, completed)
+}
+
+fn load_last_quest_kind(app: &AppHandle) -> Result<Option<String>, String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    Ok(store
+        .get(QUEST_LAST_KIND_KEY)
+        .and_then(|value| serde_json::from_value(value).ok()))
+}
+
+fn save_last_quest_kind(app: &AppHandle, quest_kind: &str) -> Result<(), String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    store.set(QUEST_LAST_KIND_KEY, json!(quest_kind));
+    Ok(())
+}
+
+fn load_last_quest_roll_at(app: &AppHandle) -> Result<Option<chrono::DateTime<chrono::Utc>>, String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    let raw: Option<String> = store
+        .get(QUEST_LAST_ROLL_KEY)
+        .and_then(|value| serde_json::from_value(value).ok());
+    Ok(raw.and_then(|timestamp| {
+        chrono::DateTime::parse_from_rfc3339(&timestamp)
+            .ok()
+            .map(|parsed| parsed.with_timezone(&chrono::Utc))
+    }))
+}
+
+fn save_last_quest_roll_at(app: &AppHandle, timestamp: &str) -> Result<(), String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    store.set(QUEST_LAST_ROLL_KEY, json!(timestamp));
+    Ok(())
+}
+
+fn cooldown_remaining_secs(
+    last_roll: Option<chrono::DateTime<chrono::Utc>>,
+    now: chrono::DateTime<chrono::Utc>,
+) -> i64 {
+    let Some(last) = last_roll else {
+        return 0;
+    };
+    let elapsed = now.signed_duration_since(last).num_seconds();
+    (QUEST_ROLL_COOLDOWN_SECS - elapsed).max(0)
+}
+
+fn quest_roll_cooldown_remaining(
+    app: &AppHandle,
+    now: chrono::DateTime<chrono::Utc>,
+) -> Result<i64, String> {
+    let last_roll = load_last_quest_roll_at(app)?;
+    Ok(cooldown_remaining_secs(last_roll, now))
 }
 
 fn load_events(app: &AppHandle) -> Result<Vec<PetEvent>, String> {
@@ -413,19 +497,19 @@ pub fn advance_focus_quest(
     app: &AppHandle,
     completed_sessions: u32,
 ) -> Result<Option<PetEvent>, String> {
-    progress_active_quest(app, "focus_sessions", completed_sessions)
+    progress_active_quest(app, QuestProgressKind::Focus, completed_sessions)
 }
 
 pub fn advance_care_quest(
     app: &AppHandle,
     completed_actions: u32,
 ) -> Result<Option<PetEvent>, String> {
-    progress_active_quest(app, "care_actions", completed_actions)
+    progress_active_quest(app, QuestProgressKind::Care, completed_actions)
 }
 
 fn progress_active_quest(
     app: &AppHandle,
-    supported_kind: &str,
+    progress_kind: QuestProgressKind,
     delta: u32,
 ) -> Result<Option<PetEvent>, String> {
     let quest = match load_active_quest(app)? {
@@ -433,7 +517,7 @@ fn progress_active_quest(
         None => return Ok(None),
     };
 
-    let (quest, progressed, completed) = apply_quest_progress(quest, supported_kind, delta);
+    let (quest, progressed, completed) = apply_quest_progress(quest, progress_kind, delta);
     if !progressed {
         return Ok(None);
     }
@@ -501,29 +585,30 @@ pub fn roll_pet_event(
 ) -> Result<PetEvent, String> {
     let _guard = store_lock.0.lock().map_err(|e| e.to_string())?;
     let pet = load_pet(&app)?;
+    let now = chrono::Utc::now();
     let active_quest = load_active_quest(&app)?;
     let event = if pet.hunger > 70 {
         PetEvent {
             id: uuid::Uuid::new_v4().to_string(),
             kind: "need".to_string(),
-            description: "Your pet is hungry and asks for a snack.".to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
+            description: "Your pet looks peckish. A snack would help.".to_string(),
+            created_at: now.to_rfc3339(),
             resolved: false,
         }
     } else if pet.energy < 30 {
         PetEvent {
             id: uuid::Uuid::new_v4().to_string(),
             kind: "rest".to_string(),
-            description: "Your pet yawns and wants a quick nap.".to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
+            description: "Your pet seems low-energy. A short nap would help.".to_string(),
+            created_at: now.to_rfc3339(),
             resolved: false,
         }
     } else if pet.affection < 40 {
         PetEvent {
             id: uuid::Uuid::new_v4().to_string(),
             kind: "bond".to_string(),
-            description: "Your pet nudges you for attention.".to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
+            description: "Your pet would enjoy a small moment of attention.".to_string(),
+            created_at: now.to_rfc3339(),
             resolved: false,
         }
     } else if let Some(quest) = active_quest {
@@ -531,15 +616,31 @@ pub fn roll_pet_event(
             id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
             description: format!(
-                "Active quest: {} ({}/{}) [{}]",
+                "Quest in progress: {} ({}/{}) [{}]",
                 quest.title, quest.completed_sessions, quest.target_sessions, quest.kind
             ),
-            created_at: chrono::Utc::now().to_rfc3339(),
+            created_at: now.to_rfc3339(),
             resolved: false,
         }
     } else {
-        let quest = create_quest_for_pet(&pet);
+        let cooldown_remaining = quest_roll_cooldown_remaining(&app, now)?;
+        if cooldown_remaining > 0 {
+            let minutes = ((cooldown_remaining as f64) / 60.0).ceil() as i64;
+            return Ok(PetEvent {
+                id: uuid::Uuid::new_v4().to_string(),
+                kind: "quiet".to_string(),
+                description: format!(
+                    "Quiet mode: next new quest available in about {} min.",
+                    minutes
+                ),
+                created_at: now.to_rfc3339(),
+                resolved: true,
+            });
+        }
+        let quest = create_quest_for_pet(&pet, load_last_quest_kind(&app)?.as_deref());
         save_active_quest(&app, Some(&quest))?;
+        save_last_quest_kind(&app, &quest.kind)?;
+        save_last_quest_roll_at(&app, &now.to_rfc3339())?;
         PetEvent {
             id: uuid::Uuid::new_v4().to_string(),
             kind: "quest".to_string(),
@@ -547,24 +648,30 @@ pub fn roll_pet_event(
                 "Quest started: {} (0/{}) [{}] for +{} coins.",
                 quest.title, quest.target_sessions, quest.kind, quest.reward_coins
             ),
-            created_at: chrono::Utc::now().to_rfc3339(),
+            created_at: now.to_rfc3339(),
             resolved: false,
         }
     };
 
     let mut events = load_events(&app)?;
-    events.push(event.clone());
-    let _ = save_bounded_events(&app, events)?;
+    let duplicate_unresolved = events
+        .iter()
+        .any(|existing| !existing.resolved && existing.kind == event.kind && existing.description == event.description);
+    if !duplicate_unresolved {
+        events.push(event.clone());
+        let _ = save_bounded_events(&app, events)?;
+    }
     Ok(event)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_quest_progress, normalize_evolution_thresholds, normalize_species_id,
-        quest_reward_for_stage, quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
+        apply_quest_progress, cooldown_remaining_secs, create_quest_for_pet,
+        normalize_evolution_thresholds, normalize_species_id, quest_reward_for_stage,
+        quest_target_for_stage, validate_variant, QuestProgressKind, ALLOWED_ANIMATIONS,
     };
-    use crate::models::PetQuest;
+    use crate::models::{PetQuest, PetState};
 
     #[test]
     fn quest_target_scales_by_stage() {
@@ -613,7 +720,8 @@ mod tests {
             created_at: "2026-01-01T00:00:00Z".to_string(),
         };
 
-        let (updated, progressed, completed) = apply_quest_progress(quest, "focus_sessions", 1);
+        let (updated, progressed, completed) =
+            apply_quest_progress(quest, QuestProgressKind::Focus, 1);
         assert_eq!(updated.completed_sessions, 0);
         assert!(!progressed);
         assert!(!completed);
@@ -632,9 +740,57 @@ mod tests {
             created_at: "2026-01-01T00:00:00Z".to_string(),
         };
 
-        let (updated, progressed, completed) = apply_quest_progress(quest, "focus_sessions", 1);
+        let (updated, progressed, completed) =
+            apply_quest_progress(quest, QuestProgressKind::Focus, 1);
         assert!(progressed);
         assert!(completed);
         assert_eq!(updated.completed_sessions, 2);
+    }
+
+    #[test]
+    fn apply_quest_progress_balanced_routine_accepts_care_and_focus() {
+        let quest = PetQuest {
+            id: "q3".to_string(),
+            kind: "balanced_routine".to_string(),
+            title: "Balanced Rhythm".to_string(),
+            description: "Mix focus and care".to_string(),
+            target_sessions: 3,
+            completed_sessions: 1,
+            reward_coins: 14,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+        };
+        let (after_focus, progressed_focus, _) =
+            apply_quest_progress(quest, QuestProgressKind::Focus, 1);
+        assert!(progressed_focus);
+        assert_eq!(after_focus.completed_sessions, 2);
+
+        let (after_care, progressed_care, completed) =
+            apply_quest_progress(after_focus, QuestProgressKind::Care, 1);
+        assert!(progressed_care);
+        assert!(completed);
+        assert_eq!(after_care.completed_sessions, 3);
+    }
+
+    #[test]
+    fn create_quest_for_pet_avoids_recent_kind_when_possible() {
+        let mut pet = PetState::default();
+        pet.total_pomodoros = 4;
+        let quest = create_quest_for_pet(&pet, Some("focus_sessions"));
+        assert_ne!(quest.kind, "focus_sessions");
+    }
+
+    #[test]
+    fn cooldown_remaining_is_zero_without_last_roll() {
+        let now = chrono::Utc::now();
+        assert_eq!(cooldown_remaining_secs(None, now), 0);
+    }
+
+    #[test]
+    fn cooldown_remaining_tracks_future_window() {
+        let now = chrono::Utc::now();
+        let last_roll = now - chrono::Duration::minutes(5);
+        let remaining = cooldown_remaining_secs(Some(last_roll), now);
+        assert!(remaining > 0);
+        assert!(remaining <= 15 * 60);
     }
 }
