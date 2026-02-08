@@ -44,4 +44,12 @@ describe("copyTextWithFallback", () => {
     });
     expect(result).toBe("Clipboard unavailable. Report");
   });
+
+  it("truncates long fallback payloads", async () => {
+    const result = await copyTextWithFallback("0123456789", "Report", {
+      maxFallbackPayloadLength: 5,
+    });
+    expect(result).toContain("Clipboard unavailable. Report: 01234…");
+    expect(result).toContain("truncated 5 chars");
+  });
 });
