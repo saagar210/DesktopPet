@@ -37,6 +37,23 @@ Use Settings -> Data & Diagnostics:
 
 - Ensure Xcode CLI tools are installed on macOS.
 - Re-run `npm run tauri build` from a clean dependency state.
+- For CI parity, compare with `.github/workflows/ci.yml`:
+  - Frontend Checks: `npm test`, `npm run test:smoke`, `npm run build`
+  - Tauri Backend + Bundle: `npm run test:smoke`, Rust tests, `npm run tauri build`
+
+## Release Mismatch Triage
+
+If a release candidate differs from expected behavior:
+
+1. Confirm docs and shipped behavior still match:
+   - `README.md`
+   - `docs/architecture.md`
+   - `docs/release.md`
+2. Re-run full verification:
+   - `./scripts/verify.sh`
+3. Validate manual calmness/cuteness checks:
+   - `docs/manual-qa-checklist.md`
+4. Capture diagnostics + backup before resetting state.
 
 ## Store Corruption Recovery
 

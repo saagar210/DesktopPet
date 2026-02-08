@@ -33,6 +33,7 @@ It floats above your windows, reacts to interactions, and turns your Pomodoro se
 - One-click full local reset to defaults
 - Diagnostics export for debugging and support workflows
 - CI quality gates for frontend checks and Tauri backend/bundle checks
+- Release evidence policy (manual QA run + CI gate summary in release PRs)
 
 ## Tech Stack
 
@@ -88,6 +89,7 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - [Operations Runbook](./docs/operations.md)
 - [Release Process](./docs/release.md)
 - [Manual QA Checklist](./docs/manual-qa-checklist.md)
+- [Manual QA Runs](./docs/manual-qa-runs/)
 - [Implementation Status](./docs/implementation-status.md)
 - [Next Phases Detailed Plan](./docs/next-phases-detailed-plan.md)
 - [Contributing](./CONTRIBUTING.md)

@@ -32,6 +32,19 @@ Build/Branch:
 - [ ] Active accessories (`party_hat`, `bow_tie`) are clamped in low budget/focus.
 - [ ] Snack accessories (`apple`, `cookie`) animate only when motion budget allows.
 
+## Seasonal + Event Calmness
+
+- [ ] Seasonal packs are disabled by default.
+- [ ] Enabling seasonal pack shows optional bundle presets only (no urgency language).
+- [ ] Applying seasonal bundle does not change notification toggles.
+- [ ] Seasonal content remains user-triggered and toast-silent unless user opted in.
+
+## Accessibility + Motion
+
+- [ ] Low animation budget remains readable and non-jittery at overlay scale.
+- [ ] Focus/quiet/chill dim states preserve species readability.
+- [ ] No decorative motion appears as high-frequency flicker.
+
 ## Reliability + Recovery
 
 - [ ] Backup export/import/reset still work.

@@ -44,3 +44,8 @@ Or run the wrapper:
 - Explain what changed and why.
 - Include verification command output summary.
 - Call out any user-facing behavior changes.
+- If docs-relevant behavior changed, update corresponding docs in the same PR.
+- For release-facing changes, include:
+  - latest CI check links
+  - `./scripts/verify.sh` summary
+  - manual QA run file under `docs/manual-qa-runs/`

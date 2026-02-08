@@ -36,3 +36,18 @@ This guide defines non-negotiable visual rules for DesktopPet species and evolut
 - No auto-triggered large popups tied to visual evolution.
 - No sudden high-contrast flashes during normal idle/working states.
 - Cosmetic packs cannot force urgency, countdowns, or FOMO prompts.
+
+## Accessibility + Motion Sensitivity
+- Cuteness must remain readable under reduced visual intensity:
+  - verify silhouettes and facial cues remain recognizable in low animation budget.
+  - avoid tiny high-frequency motions that become visual noise at small overlay scale.
+- Prefer smooth easing and longer loops over abrupt snaps.
+- Keep decorative micro-accents optional and motion-gated.
+
+## Cuteness Acceptance Scorecard (Release Gate)
+Every new species/evolution update should pass all checks below:
+- [ ] Silhouette continuity preserved across stage 0/1/2.
+- [ ] Eye ratio and face geometry remain non-threatening.
+- [ ] Palette remains soft and coherent at normal + low brightness.
+- [ ] Low animation budget retains charm without jitter.
+- [ ] Quiet/focus/chill states reduce intensity without breaking character identity.

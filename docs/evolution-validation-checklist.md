@@ -21,9 +21,13 @@ Use this checklist whenever adding or updating species/evolution assets.
 - [ ] Context-aware chill can dim/idle pet when active.
 - [ ] Species switch persists after restart.
 - [ ] Evolution thresholds for the species are ascending and valid.
+- [ ] Seasonal packs remain disabled by default and opt-in only.
+- [ ] Seasonal bundle apply flow does not mutate notification settings.
+- [ ] Photo Booth card render remains deterministic for species + loadout.
 
 ## Testing Validation
 - [ ] `npm test` passes.
+- [ ] `npm run test:smoke` passes.
 - [ ] `npm run build` passes.
 - [ ] `cargo test --manifest-path src-tauri/Cargo.toml` passes.
 - [ ] Manual Tauri check confirms species switch + evolution + calm behavior.

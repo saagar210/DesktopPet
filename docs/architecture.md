@@ -23,6 +23,7 @@ Desktop Pet is a local-first macOS desktop application built with:
   - Data-driven species packs (`packs/*.json`) + sprite assets (`sprites/*.svg`).
   - Behavior composer merges species profile + accessory effects + calm controls.
   - Optional seasonal pack metadata (`seasonal/*.json`) activated only by user opt-in.
+  - Photo Booth theme resolver maps species + loadout to deterministic card presentation.
 
 ## Data Flow
 
@@ -50,6 +51,7 @@ Primary persisted keys:
 - `pet_active_quest`
 - `focus_guardrail_events`
 - `schema_version`
+- quest progression preference signals (`pet_recent_focus_progress`, `pet_recent_care_progress`)
 - calm-control settings (`quiet mode`, `focus mode`, `animation budget`, `context-aware chill`)
 - optional seasonal pack activation list
 
@@ -71,6 +73,18 @@ Maintenance commands:
 - `get_app_diagnostics`
 
 These support local backup/restore, reset, and support diagnostics without external services.
+
+## Calmness + Cuteness Enforcement
+
+- Quiet-by-default behavior is enforced by default settings (`quietModeEnabled=true`, `toastNotificationsEnabled=false`).
+- Seasonal content is opt-in only and may not trigger urgency prompts or automatic toast pressure.
+- Cuteness standards are codified in:
+  - `docs/cuteness-style-guide.md`
+  - `docs/evolution-validation-checklist.md`
+- Validation coverage spans:
+  - species pack rule checks
+  - quest/event anti-nag cooldown behavior
+  - animation budget and chill-path behavior composition
 
 ## Build + Test Entry Points
 

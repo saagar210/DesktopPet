@@ -21,6 +21,31 @@ Keep these in sync before tagging.
 
 Attach the completed checklist (or a short pass/fail summary) to the release PR.
 
+## Release Evidence Requirements
+
+Every release PR should include:
+
+- Automated evidence:
+  - latest CI run links for:
+    - `Frontend Checks`
+    - `Tauri Backend + Bundle`
+  - local `./scripts/verify.sh` summary
+- Manual evidence:
+  - completed run record in `docs/manual-qa-runs/`
+  - checklist reference to `docs/manual-qa-checklist.md`
+- Behavior evidence:
+  - confirmation that seasonal/cosmetic paths remain opt-in and non-urgent
+  - confirmation that quiet defaults are unchanged
+
+## Final Go/No-Go Gate
+
+Release is **Go** only when all are true:
+
+- latest PR CI checks are green
+- no docs/runtime mismatch for changed features
+- manual QA run shows no blocking calmness/cuteness regressions
+- backup/import/reset and diagnostics paths still work
+
 ## CI Release Workflow
 
 `/.github/workflows/release.yml` handles:

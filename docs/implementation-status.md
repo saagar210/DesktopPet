@@ -15,6 +15,10 @@ This repository has completed the following hardening phases:
   - Iteration A complete: calm quest scheduler + anti-nag cooldown + quiet feedback surfaced in pet panel.
   - Iteration B complete: weighted quest selection + accessory quest accents + photo booth v2 themes.
   - Iteration C complete: seasonal pack polish + calm acceptance QA.
+- Phase 10: polish + release hardening (complete)
+  - Final docs pass completed for architecture, release, debugging, and contribution contract.
+  - Manual calmness/cuteness/accessibility acceptance gates documented.
+  - Release evidence expectations aligned with CI + manual QA artifacts.
 
 See supporting docs in `/docs` for implementation details.
 
