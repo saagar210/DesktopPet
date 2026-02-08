@@ -192,6 +192,7 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 ### Stop/Go Checkpoint
 - Stop on any mismatch between docs and observable app behavior.
 - Go only with full release gate green and manual QA sign-off.
+- Status: complete on February 8, 2026 (`docs/manual-qa-runs/2026-02-08-phase10-release-hardening.md`).
 
 ## Phase 11: Post-Release Expansion Guardrails
 
