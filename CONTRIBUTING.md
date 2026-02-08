@@ -49,3 +49,11 @@ Or run the wrapper:
   - latest CI check links
   - `./scripts/verify.sh` summary
   - manual QA run file under `docs/manual-qa-runs/`
+
+## Pack Author Requirements
+
+If your PR adds or changes species/seasonal packs:
+
+- complete `docs/pack-author-regression-checklist.md`
+- confirm schema compatibility in `docs/pet-species-pack-format.md`
+- report animation and bundle impact from `docs/performance-budget.md`

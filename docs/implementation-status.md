@@ -19,8 +19,12 @@ This repository has completed the following hardening phases:
   - Final docs pass completed for architecture, release, debugging, and contribution contract.
   - Manual calmness/cuteness/accessibility acceptance gates documented.
   - Release evidence expectations aligned with CI + manual QA artifacts.
+- Phase 11: post-release expansion guardrails (complete)
+  - Added pack compatibility matrix and migration policy for drop-in species packs.
+  - Added pack-author regression checklist covering validator, calmness, accessibility, and performance.
+  - Added lightweight performance budget for animation cadence and bundle-size deltas.
 
 See supporting docs in `/docs` for implementation details.
 
-Next execution roadmap:
-- `docs/next-phases-detailed-plan.md` (Phases 7-10 with stop/go gates and verification matrix)
+Current roadmap status:
+- `docs/next-phases-detailed-plan.md` (Phases 7-11 now complete)

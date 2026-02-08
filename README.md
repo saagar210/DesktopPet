@@ -83,6 +83,8 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - [Security Model](./docs/security-model.md)
 - [Permission Matrix](./docs/permission-matrix.md)
 - [Pet Species Pack Format](./docs/pet-species-pack-format.md)
+- [Pack Author Regression Checklist](./docs/pack-author-regression-checklist.md)
+- [Performance Budget](./docs/performance-budget.md)
 - [Cuteness Style Guide](./docs/cuteness-style-guide.md)
 - [Evolution Validation Checklist](./docs/evolution-validation-checklist.md)
 - [Debugging](./docs/debugging.md)
