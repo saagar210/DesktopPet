@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CustomizationPanel } from "../CustomizationPanel";
 import type { PetState, Settings } from "../../../store/types";
+import { getSpeciesPackById } from "../../../pets/species";
 
 const settings: Settings = {
   timerPreset: "standard",
@@ -81,5 +82,69 @@ describe("CustomizationPanel smoke flow", () => {
       validatedSpeciesPacks: ["penguin", "cat"],
     });
     expect(onSetPetSpecies).not.toHaveBeenCalled();
+  });
+
+  it("keeps seasonal bundles opt-in and applies presets without notification changes", async () => {
+    const user = userEvent.setup();
+    const onUpdateSettings = vi.fn();
+    const onSetPetSpecies = vi.fn();
+    const onSetPetCustomization = vi.fn();
+
+    const view = render(
+      <CustomizationPanel
+        settings={settings}
+        pet={pet}
+        loadouts={[]}
+        onUpdateSettings={onUpdateSettings}
+        onSetPetCustomization={onSetPetCustomization}
+        onSetPetSpecies={onSetPetSpecies}
+        onSaveLoadout={vi.fn()}
+        onApplyLoadout={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /Petal Morning/i })).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText("Spring Blossom"));
+    expect(onUpdateSettings).toHaveBeenCalledWith({
+      enabledSeasonalPacks: ["spring-blossom"],
+    });
+
+    const enabledSettings: Settings = {
+      ...settings,
+      enabledSeasonalPacks: ["spring-blossom"],
+    };
+
+    onUpdateSettings.mockClear();
+    view.rerender(
+      <CustomizationPanel
+        settings={enabledSettings}
+        pet={pet}
+        loadouts={[]}
+        onUpdateSettings={onUpdateSettings}
+        onSetPetCustomization={onSetPetCustomization}
+        onSetPetSpecies={onSetPetSpecies}
+        onSaveLoadout={vi.fn()}
+        onApplyLoadout={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /Petal Morning/i }));
+    expect(onSetPetCustomization).toHaveBeenCalledWith("plush", "meadow");
+
+    const catPack = getSpeciesPackById("cat");
+    expect(onSetPetSpecies).toHaveBeenCalledWith("cat", catPack.evolutionThresholds);
+    expect(onUpdateSettings).toHaveBeenCalledWith({
+      uiTheme: "sunrise",
+      petSkin: "plush",
+      petScene: "meadow",
+    });
+    expect(onUpdateSettings).toHaveBeenCalledWith({
+      validatedSpeciesPacks: ["penguin", "cat"],
+    });
+    expect(onUpdateSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        toastNotificationsEnabled: expect.anything(),
+      })
+    );
   });
 });

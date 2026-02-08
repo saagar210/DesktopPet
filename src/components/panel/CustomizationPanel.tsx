@@ -27,6 +27,20 @@ const STYLE_BUNDLES = [
   { name: "Cozy Flow", uiTheme: "sunrise", petSkin: "plush", petScene: "meadow" },
   { name: "Deep Work Orbit", uiTheme: "dusk", petSkin: "neon", petScene: "space" },
 ] as const;
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
 
 function buildValidationFailureReport(packName: string, result: PackValidationResult) {
   const failures = result.checks.filter((check) => !check.pass);
@@ -64,6 +78,8 @@ export function CustomizationPanel({
     pet.speciesId,
   ]);
   const seasonalPacks = getSeasonalPacks();
+  const seasonalBundleNotice =
+    "Seasonal bundles are optional style presets only. They never trigger toasts or urgency prompts.";
 
   return (
     <div className="flex flex-col gap-4">
@@ -343,9 +359,13 @@ export function CustomizationPanel({
         <p className="text-xs" style={{ color: "var(--muted-color)" }}>
           No timed nudges. Enable only what you want.
         </p>
+        <p className="text-[11px]" style={{ color: "var(--muted-color)" }}>{seasonalBundleNotice}</p>
         <div className="flex flex-col gap-2">
           {seasonalPacks.map((pack) => {
             const enabled = settings.enabledSeasonalPacks.includes(pack.id);
+            const activeMonths = pack.activeMonths
+              .map((month) => MONTH_NAMES[Math.max(0, Math.min(11, month - 1))])
+              .join(", ");
             return (
               <div key={pack.id} className="rounded-md border p-2" style={{ borderColor: "var(--border-color)" }}>
                 <label className="flex items-center justify-between gap-2 text-sm">
@@ -355,7 +375,7 @@ export function CustomizationPanel({
                     checked={enabled}
                     onChange={(event) => {
                       const next = event.target.checked
-                        ? [...settings.enabledSeasonalPacks, pack.id]
+                        ? Array.from(new Set([...settings.enabledSeasonalPacks, pack.id]))
                         : settings.enabledSeasonalPacks.filter((id) => id !== pack.id);
                       onUpdateSettings({ enabledSeasonalPacks: next });
                     }}
@@ -363,6 +383,9 @@ export function CustomizationPanel({
                 </label>
                 <div className="text-xs mt-1" style={{ color: "var(--muted-color)" }}>
                   {pack.description}
+                </div>
+                <div className="text-[11px] mt-1" style={{ color: "var(--muted-color)" }}>
+                  Suggested season: {activeMonths}
                 </div>
                 {enabled && (
                   <div className="mt-2 flex flex-col gap-1">
