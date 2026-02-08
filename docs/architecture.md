@@ -21,6 +21,7 @@ Desktop Pet is a local-first macOS desktop application built with:
   - Broadcasts state updates from Rust to frontend listeners.
 - Species + cosmetics packs (`/src/pets`)
   - Data-driven species packs (`packs/*.json`) + sprite assets (`sprites/*.svg`).
+  - Runtime pack loading enforces `schemaVersion` compatibility before activation.
   - Behavior composer merges species profile + accessory effects + calm controls.
   - Optional seasonal pack metadata (`seasonal/*.json`) activated only by user opt-in.
   - Photo Booth theme resolver maps species + loadout to deterministic card presentation.
@@ -91,6 +92,7 @@ These support local backup/restore, reset, and support diagnostics without exter
 
 - Animation cadence and bundle-size budgets are defined in `docs/performance-budget.md`.
 - Pack changes must pass `docs/pack-author-regression-checklist.md` before merge.
+- CI enforces budget thresholds with `npm run check:performance-budget`.
 - Budget exceptions require explicit PR justification and mitigation notes.
 
 ## Build + Test Entry Points
@@ -99,6 +101,8 @@ Canonical commands:
 
 - `npm test`
 - `npm run test:smoke`
+- `npm run test:pack-qa`
 - `npm run build`
+- `npm run check:performance-budget`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`

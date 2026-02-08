@@ -13,6 +13,7 @@ describe("species packs", () => {
 
   it("ensures each pack has 3 stages and ascending thresholds", () => {
     for (const pack of getSpeciesPacks()) {
+      expect(pack.schemaVersion).toBe(1);
       expect(pack.stageSprites).toHaveLength(3);
       expect(pack.stageNames).toHaveLength(3);
       expect(pack.evolutionThresholds[0]).toBe(0);

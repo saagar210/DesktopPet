@@ -33,7 +33,9 @@ Use this checklist for every new or updated species/seasonal pack PR.
 
 - [ ] `npm test` passes.
 - [ ] `npm run test:smoke` passes.
+- [ ] `npm run test:pack-qa` passes.
 - [ ] `npm run build` passes.
+- [ ] `npm run check:performance-budget` passes.
 - [ ] `cargo test --manifest-path src-tauri/Cargo.toml` passes.
 - [ ] `./scripts/verify.sh` passes.
 - [ ] Manual QA run note added under `docs/manual-qa-runs/` when behavior changed.

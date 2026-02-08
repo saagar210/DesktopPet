@@ -23,8 +23,12 @@ This repository has completed the following hardening phases:
   - Added pack compatibility matrix and migration policy for drop-in species packs.
   - Added pack-author regression checklist covering validator, calmness, accessibility, and performance.
   - Added lightweight performance budget for animation cadence and bundle-size deltas.
+- Phase 12: runtime pack guardrails + CI budget enforcement (complete)
+  - Enforced species pack `schemaVersion` compatibility in runtime loading and validator checks.
+  - Added automated pack QA harness with JSON/Markdown artifact output.
+  - Added CI performance-budget gate and baseline-driven threshold checks for PRs.
 
 See supporting docs in `/docs` for implementation details.
 
 Current roadmap status:
-- `docs/next-phases-detailed-plan.md` (Phases 7-11 now complete)
+- `docs/next-phases-detailed-plan.md` (Phases 7-12 now complete)

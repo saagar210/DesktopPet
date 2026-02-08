@@ -1,4 +1,5 @@
 export interface PetSpeciesPack {
+  schemaVersion: 1;
   id: string;
   name: string;
   description: string;
@@ -27,6 +28,7 @@ export interface PetSpeciesPack {
 }
 
 interface RawSpeciesPack {
+  schemaVersion: number;
   id: string;
   name: string;
   description: string;
@@ -61,6 +63,8 @@ const spriteAssets = {
   }) as Record<string, string>),
 };
 
+export const SUPPORTED_PACK_SCHEMA_VERSION = 1 as const;
+
 function resolveSprite(fileName: string): string {
   const entry = Object.entries(spriteAssets).find(([path]) => path.endsWith(`/${fileName}`));
   if (!entry) {
@@ -77,7 +81,13 @@ function normalizeThresholds(
   return [0, stage1, stage2];
 }
 
-function normalizePack(input: RawSpeciesPack): PetSpeciesPack {
+function normalizePack(input: RawSpeciesPack, sourcePath: string): PetSpeciesPack {
+  if (input.schemaVersion !== SUPPORTED_PACK_SCHEMA_VERSION) {
+    throw new Error(
+      `Unsupported species pack schemaVersion=${input.schemaVersion} in ${sourcePath}. Supported: ${SUPPORTED_PACK_SCHEMA_VERSION}.`
+    );
+  }
+
   const stageSprites: [string, string, string] = [
     resolveSprite(input.stageSpriteFiles[0]),
     resolveSprite(input.stageSpriteFiles[1]),
@@ -93,6 +103,7 @@ function normalizePack(input: RawSpeciesPack): PetSpeciesPack {
   const cadenceSlow = Math.max(cadenceFast, Math.min(5000, behaviorProfile.interactionCadenceMs[1]));
 
   return {
+    schemaVersion: SUPPORTED_PACK_SCHEMA_VERSION,
     id: input.id.trim().toLowerCase(),
     name: input.name.trim(),
     description: input.description.trim(),
@@ -110,8 +121,10 @@ function normalizePack(input: RawSpeciesPack): PetSpeciesPack {
   };
 }
 
-const SPECIES_PACKS: PetSpeciesPack[] = Object.values(rawPacks)
-  .map((entry) => normalizePack((entry as { default: RawSpeciesPack }).default))
+const SPECIES_PACKS: PetSpeciesPack[] = Object.entries(rawPacks)
+  .map(([sourcePath, entry]) =>
+    normalizePack((entry as { default: RawSpeciesPack }).default, sourcePath)
+  )
   .sort((a, b) => a.name.localeCompare(b.name));
 
 export function getSpeciesPacks() {

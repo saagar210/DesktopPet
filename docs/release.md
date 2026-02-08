@@ -53,6 +53,7 @@ For any release that includes species or seasonal pack updates:
 - complete `docs/pack-author-regression-checklist.md`
 - confirm compatibility against `docs/pet-species-pack-format.md`
 - confirm animation + bundle budgets in `docs/performance-budget.md`
+- include `artifacts/pack-qa-report.md` and `artifacts/performance-budget-report.md` evidence from CI/local runs
 - include pack validation evidence in release PR notes
 
 ## CI Release Workflow

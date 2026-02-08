@@ -23,6 +23,18 @@ describe("pack validation", () => {
     expect(thresholds?.remediation).toContain("Set thresholds");
   });
 
+  it("fails unsupported schema versions", () => {
+    const pack = {
+      ...getSpeciesPackById("penguin"),
+      schemaVersion: 99 as unknown as 1,
+    };
+    const result = validateSpeciesPack(pack);
+    expect(result.pass).toBe(false);
+    const schema = result.checks.find((check) => check.id === "schema-version");
+    expect(schema?.pass).toBe(false);
+    expect(schema?.remediation).toContain("schemaVersion");
+  });
+
   it("keeps validation checks aligned with the rulebook metadata", () => {
     const result = validateSpeciesPack(getSpeciesPackById("corgi"));
     const ruleIds = Object.keys(PACK_VALIDATION_RULEBOOK).sort();

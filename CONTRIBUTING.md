@@ -14,7 +14,9 @@ Run these before opening a PR:
 ```bash
 npm test
 npm run test:smoke
+npm run test:pack-qa
 npm run build
+npm run check:performance-budget
 cargo test --manifest-path src-tauri/Cargo.toml
 npm run tauri build
 ```
