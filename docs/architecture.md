@@ -76,6 +76,7 @@ These support local backup/restore, reset, and support diagnostics without exter
 Canonical commands:
 
 - `npm test`
+- `npm run test:smoke`
 - `npm run build`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`

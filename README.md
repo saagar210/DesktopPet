@@ -50,6 +50,7 @@ The pet is SVG-based, and app data is stored locally on-device.
 ```bash
 npm install
 npm test
+npm run test:smoke
 npm run tauri dev
 ```
 
@@ -61,6 +62,7 @@ npm run tauri dev
 
 This runs:
 - `npm test`
+- `npm run test:smoke`
 - `npm run build`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`
@@ -86,4 +88,5 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - [Operations Runbook](./docs/operations.md)
 - [Release Process](./docs/release.md)
 - [Implementation Status](./docs/implementation-status.md)
+- [Next Phases Detailed Plan](./docs/next-phases-detailed-plan.md)
 - [Contributing](./CONTRIBUTING.md)
