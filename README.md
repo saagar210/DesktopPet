@@ -1,42 +1,39 @@
 # Desktop Pet
 
-A friendly penguin companion that floats on your desktop, helping you stay focused with Pomodoro timers.
+Desktop Pet is a playful desktop penguin + focus sidekick.
+It floats above your windows, reacts to interactions, and turns your Pomodoro sessions into progression, coins, quests, and customization unlocks.
 
-## What is this?
+## Why It Is Fun
 
-A minimal, transparent pet that lives on your screen. Click to pat it, drag it anywhere. Use the control panel to manage timers, feed your pet, track goals, and watch it evolve.
+- Your penguin lives on your desktop and reacts to pats, care actions, and focus progress.
+- Focus sessions reward coins and XP, which feed directly into pet growth and unlocks.
+- Quests, events, and accessories keep the loop fresh without becoming noisy.
+- You can theme both the app UI and your pet setup with loadouts.
 
-## Features
+## Current App Features
 
-- **Free-Floating Pet** - A transparent penguin companion that sits on top of all windows
-- **Pomodoro Timer** - Three modes (15/5, 25/5, 50/10) with work/break cycling
-- **Pet Care** - Feed, play, clean, and train your pet from the control panel
-- **Pet Evolution** - Complete focus sessions to evolve through 3 stages
-- **Quests & Events** - Random events and quests for bonus coins
-- **Coin Shop** - Buy accessories: party hats, sunglasses, scarves, and snacks
-- **Customization** - Change pet skins and scenes
-- **Daily Goals & Tasks** - Track your productivity
-- **System Tray** - Quick timer controls
+- **Floating Pet Overlay**: transparent, always-on-top companion window
+- **Pomodoro Modes**: 15/5, 25/5, and 50/10 presets with runtime persistence
+- **Pet Progression**: evolution stages, care stats, personality state, and interactions
+- **Quests + Events**: rolling events, active quests, and completion rewards
+- **Shop + Coins**: accessory catalog with ownership and purchase tracking
+- **Tasks + Daily Goals**: lightweight productivity tracking tied to session outcomes
+- **Focus Guardrails**: allowlist/blocklist host matching, interventions, and event history
+- **Customization**: skins, scenes, themes, and saved loadouts
+- **System Tray Controls**: quick timer start/pause/resume/reset + preset switching
+
+## Reliability and Recovery
+
+- Local-first data storage with schema normalization on startup
+- Snapshot export/import for backup and restore
+- One-click full local reset to defaults
+- Diagnostics export for debugging and support workflows
+- CI quality gates for frontend checks and Tauri backend/bundle checks
 
 ## Tech Stack
 
-Built with [Tauri 2](https://tauri.app/), React, TypeScript, and TailwindCSS. The pet is pure SVG. All data stored locally.
-
-## Run It
-
-```bash
-npm install
-npm test
-npm run tauri dev
-```
-
-## Build
-
-```bash
-npm run tauri build
-```
-
-Build artifacts are written to `src-tauri/target/release/bundle/`.
+Built with [Tauri 2](https://tauri.app/), React, TypeScript, and TailwindCSS.
+The pet is SVG-based, and app data is stored locally on-device.
 
 ## Prerequisites
 
@@ -44,11 +41,33 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - Rust toolchain (stable)
 - Xcode Command Line Tools on macOS (`xcode-select --install`)
 
-## Verify
+## Local Development
+
+```bash
+npm install
+npm test
+npm run tauri dev
+```
+
+## Verification
 
 ```bash
 ./scripts/verify.sh
 ```
+
+This runs:
+- `npm test`
+- `npm run build`
+- `cargo test --manifest-path src-tauri/Cargo.toml`
+- `npm run tauri build`
+
+## Production Build
+
+```bash
+npm run tauri build
+```
+
+Build artifacts are written to `src-tauri/target/release/bundle/`.
 
 ## Project Docs
 
@@ -58,4 +77,5 @@ Build artifacts are written to `src-tauri/target/release/bundle/`.
 - [Debugging](./docs/debugging.md)
 - [Operations Runbook](./docs/operations.md)
 - [Release Process](./docs/release.md)
+- [Implementation Status](./docs/implementation-status.md)
 - [Contributing](./CONTRIBUTING.md)
