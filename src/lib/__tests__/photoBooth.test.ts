@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { downloadPetCard } from "../photoBooth";
+import { downloadPetCard, resolvePetCardTheme } from "../photoBooth";
 import { getSpeciesPackById } from "../../pets/species";
 import type { PetState, Settings, UserProgress } from "../../store/types";
 
@@ -131,5 +131,62 @@ describe("photo booth", () => {
     });
 
     expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves species and loadout-aware themes", () => {
+    const pet: PetState = {
+      currentStage: 1,
+      animationState: "idle",
+      accessories: [],
+      totalPomodoros: 8,
+      speciesId: "cat",
+      evolutionThresholds: [0, 4, 12],
+      mood: "content",
+      energy: 80,
+      hunger: 20,
+      cleanliness: 80,
+      affection: 50,
+      personality: "balanced",
+      evolutionPath: "companion",
+      skin: "classic",
+      scene: "cozy_room",
+      lastInteraction: null,
+      lastCareUpdateAt: new Date().toISOString(),
+    };
+    const settings: Settings = {
+      timerPreset: "standard",
+      notificationsEnabled: true,
+      toastNotificationsEnabled: false,
+      trayBadgeEnabled: true,
+      notificationWhitelist: ["session_complete", "guardrail_alert"],
+      soundsEnabled: false,
+      soundVolume: 0.7,
+      quietModeEnabled: true,
+      focusModeEnabled: false,
+      animationBudget: "medium",
+      contextAwareChillEnabled: true,
+      chillOnFullscreen: true,
+      chillOnMeetings: true,
+      chillOnHeavyTyping: true,
+      meetingHosts: ["zoom.us"],
+      heavyTypingThresholdCpm: 220,
+      enabledSeasonalPacks: [],
+      validatedSpeciesPacks: ["penguin", "cat"],
+      uiTheme: "sunrise",
+      petSkin: "neon",
+      petScene: "cozy_room",
+      focusGuardrailsEnabled: false,
+      focusGuardrailsWorkOnly: true,
+      focusAllowlist: [],
+      focusBlocklist: [],
+    };
+
+    const theme = resolvePetCardTheme({
+      pet,
+      species: getSpeciesPackById("cat"),
+      settings,
+    });
+    expect(theme.id).toBe("cat-cozy-night");
+    expect(theme.titleColor).toBe("#0f172a");
   });
 });

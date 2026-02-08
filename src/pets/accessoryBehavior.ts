@@ -3,6 +3,7 @@ import type { ShopItemId } from "../lib/constants";
 export interface AccessoryBehaviorProfile {
   id: ShopItemId;
   behaviorClass: string | null;
+  questAccentClass: string | null;
   minMotionLevel: 0 | 1 | 2 | 3;
   allowWhenChilled: boolean;
   motionBoost: 0 | 1;
@@ -13,6 +14,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   party_hat: {
     id: "party_hat",
     behaviorClass: "behavior-partyhat",
+    questAccentClass: "quest-accent-partyhat",
     minMotionLevel: 2,
     allowWhenChilled: false,
     motionBoost: 1,
@@ -21,6 +23,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   bow_tie: {
     id: "bow_tie",
     behaviorClass: "behavior-bowtie",
+    questAccentClass: "quest-accent-bowtie",
     minMotionLevel: 2,
     allowWhenChilled: false,
     motionBoost: 1,
@@ -29,6 +32,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   sunglasses: {
     id: "sunglasses",
     behaviorClass: "behavior-sunglasses",
+    questAccentClass: "quest-accent-sunglasses",
     minMotionLevel: 0,
     allowWhenChilled: true,
     motionBoost: 0,
@@ -37,6 +41,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   scarf: {
     id: "scarf",
     behaviorClass: "behavior-scarf",
+    questAccentClass: "quest-accent-scarf",
     minMotionLevel: 0,
     allowWhenChilled: true,
     motionBoost: 0,
@@ -45,6 +50,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   apple: {
     id: "apple",
     behaviorClass: "behavior-apple",
+    questAccentClass: "quest-accent-snack",
     minMotionLevel: 1,
     allowWhenChilled: false,
     motionBoost: 0,
@@ -53,6 +59,7 @@ export const ACCESSORY_BEHAVIOR_PROFILES: Record<ShopItemId, AccessoryBehaviorPr
   cookie: {
     id: "cookie",
     behaviorClass: "behavior-cookie",
+    questAccentClass: "quest-accent-snack",
     minMotionLevel: 1,
     allowWhenChilled: false,
     motionBoost: 0,

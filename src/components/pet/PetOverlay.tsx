@@ -160,6 +160,7 @@ export function PetOverlay() {
   const composedBehavior = composePetBehavior({
     species,
     accessories: pet.accessories,
+    lastInteraction: pet.lastInteraction,
     animationState: (animOverride ?? pet.animationState),
     animationBudget: settings.animationBudget,
     quietModeEnabled: settings.quietModeEnabled,

@@ -10,6 +10,8 @@ const MAX_SPECIES_ID_CHARS: usize = 48;
 const QUEST_ROLL_COOLDOWN_SECS: i64 = 20 * 60;
 const QUEST_LAST_KIND_KEY: &str = "pet_last_quest_kind";
 const QUEST_LAST_ROLL_KEY: &str = "pet_last_quest_roll_at";
+const QUEST_RECENT_FOCUS_KEY: &str = "pet_recent_focus_progress";
+const QUEST_RECENT_CARE_KEY: &str = "pet_recent_care_progress";
 const ALLOWED_ANIMATIONS: &[&str] = &[
     "idle",
     "working",
@@ -185,13 +187,18 @@ fn quest_accepts_progress(kind: &str, progress_kind: QuestProgressKind) -> bool 
     }
 }
 
-fn create_quest_for_pet(pet: &PetState, last_quest_kind: Option<&str>) -> PetQuest {
-    let offset = (pet.total_pomodoros + pet.current_stage) as usize % QUEST_TEMPLATES.len();
-    let template = (0..QUEST_TEMPLATES.len())
-        .map(|step| QUEST_TEMPLATES[(offset + step) % QUEST_TEMPLATES.len()])
-        .find(|candidate| Some(candidate.kind) != last_quest_kind)
-        .unwrap_or(QUEST_TEMPLATES[offset]);
+fn create_quest_for_pet(
+    pet: &PetState,
+    last_quest_kind: Option<&str>,
+    recent_focus: u32,
+    recent_care: u32,
+) -> PetQuest {
+    let template = select_quest_template_for_pet(pet, last_quest_kind, recent_focus, recent_care);
     let stage_target = quest_target_for_stage(pet.current_stage);
+    build_quest_from_template(template, pet.current_stage, stage_target)
+}
+
+fn build_quest_from_template(template: QuestTemplate, stage: u32, stage_target: u32) -> PetQuest {
     let target_sessions = match template.kind {
         "care_actions" => stage_target + 1,
         "balanced_routine" => stage_target + 1,
@@ -199,10 +206,10 @@ fn create_quest_for_pet(pet: &PetState, last_quest_kind: Option<&str>) -> PetQue
         _ => stage_target,
     };
     let reward = match template.kind {
-        "care_actions" => quest_reward_for_stage(pet.current_stage).saturating_sub(2).max(8),
-        "balanced_routine" => quest_reward_for_stage(pet.current_stage).saturating_add(2),
-        "mindful_reset" => quest_reward_for_stage(pet.current_stage).saturating_add(1),
-        _ => quest_reward_for_stage(pet.current_stage),
+        "care_actions" => quest_reward_for_stage(stage).saturating_sub(2).max(8),
+        "balanced_routine" => quest_reward_for_stage(stage).saturating_add(2),
+        "mindful_reset" => quest_reward_for_stage(stage).saturating_add(1),
+        _ => quest_reward_for_stage(stage),
     };
 
     PetQuest {
@@ -215,6 +222,166 @@ fn create_quest_for_pet(pet: &PetState, last_quest_kind: Option<&str>) -> PetQue
         reward_coins: reward,
         created_at: chrono::Utc::now().to_rfc3339(),
     }
+}
+
+fn quest_stage_score(kind: &str, stage: u32) -> i32 {
+    match (kind, stage) {
+        ("focus_sessions", 0) => 4,
+        ("focus_sessions", 1) => 3,
+        ("focus_sessions", _) => 2,
+        ("care_actions", 0) => 3,
+        ("care_actions", 1) => 3,
+        ("care_actions", _) => 4,
+        ("balanced_routine", 0) => 3,
+        ("balanced_routine", 1) => 4,
+        ("balanced_routine", _) => 4,
+        ("mindful_reset", 0) => 2,
+        ("mindful_reset", 1) => 3,
+        ("mindful_reset", _) => 4,
+        _ => 2,
+    }
+}
+
+fn quest_mix_score(kind: &str, recent_focus: u32, recent_care: u32) -> i32 {
+    if recent_focus > recent_care.saturating_add(1) {
+        match kind {
+            "care_actions" | "mindful_reset" => 2,
+            "balanced_routine" => 1,
+            "focus_sessions" => -1,
+            _ => 0,
+        }
+    } else if recent_care > recent_focus.saturating_add(1) {
+        match kind {
+            "focus_sessions" => 2,
+            "balanced_routine" => 1,
+            "care_actions" => -1,
+            _ => 0,
+        }
+    } else {
+        0
+    }
+}
+
+fn quest_accessory_score(kind: &str, accessories: &[String]) -> i32 {
+    let mut score = 0;
+    for accessory in accessories {
+        score += match accessory.as_str() {
+            "apple" | "cookie" => match kind {
+                "care_actions" | "mindful_reset" => 1,
+                _ => 0,
+            },
+            "party_hat" | "bow_tie" => match kind {
+                "focus_sessions" | "balanced_routine" => 1,
+                _ => 0,
+            },
+            "scarf" | "sunglasses" => match kind {
+                "mindful_reset" | "balanced_routine" => 1,
+                _ => 0,
+            },
+            _ => 0,
+        };
+    }
+    score.min(3)
+}
+
+fn quest_total_score(
+    template: QuestTemplate,
+    pet: &PetState,
+    last_quest_kind: Option<&str>,
+    recent_focus: u32,
+    recent_care: u32,
+) -> i32 {
+    let mut score = quest_stage_score(template.kind, pet.current_stage)
+        + quest_mix_score(template.kind, recent_focus, recent_care)
+        + quest_accessory_score(template.kind, &pet.accessories);
+    if Some(template.kind) == last_quest_kind {
+        score -= 3;
+    }
+    score.max(1)
+}
+
+fn select_quest_template_for_pet(
+    pet: &PetState,
+    last_quest_kind: Option<&str>,
+    recent_focus: u32,
+    recent_care: u32,
+) -> QuestTemplate {
+    let offset =
+        (pet.total_pomodoros + pet.current_stage + recent_focus + recent_care) as usize
+            % QUEST_TEMPLATES.len();
+    let mut ranked = Vec::with_capacity(QUEST_TEMPLATES.len());
+    for step in 0..QUEST_TEMPLATES.len() {
+        let candidate = QUEST_TEMPLATES[(offset + step) % QUEST_TEMPLATES.len()];
+        ranked.push((
+            candidate,
+            quest_total_score(candidate, pet, last_quest_kind, recent_focus, recent_care),
+        ));
+    }
+    ranked.sort_by(|(left_template, left_score), (right_template, right_score)| {
+        right_score
+            .cmp(left_score)
+            .then_with(|| left_template.kind.cmp(right_template.kind))
+    });
+    if let Some(last_kind) = last_quest_kind {
+        if let Some((template, score)) = ranked.first().copied() {
+            if template.kind == last_kind {
+                if let Some((alternative, alternative_score)) = ranked
+                    .iter()
+                    .copied()
+                    .find(|(candidate, _)| candidate.kind != last_kind)
+                {
+                    if alternative_score >= score - 1 {
+                        return alternative;
+                    }
+                }
+            }
+            return template;
+        }
+    }
+    ranked.first().map(|(template, _)| *template).unwrap_or(QUEST_TEMPLATES[0])
+}
+
+fn load_recent_quest_progress(app: &AppHandle) -> Result<(u32, u32), String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    let focus: u32 = store
+        .get(QUEST_RECENT_FOCUS_KEY)
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or(0);
+    let care: u32 = store
+        .get(QUEST_RECENT_CARE_KEY)
+        .and_then(|value| serde_json::from_value(value).ok())
+        .unwrap_or(0);
+    Ok((focus.min(12), care.min(12)))
+}
+
+fn save_recent_quest_progress(app: &AppHandle, focus: u32, care: u32) -> Result<(), String> {
+    let store = app.store("store.json").map_err(|e| e.to_string())?;
+    store.set(QUEST_RECENT_FOCUS_KEY, json!(focus.min(12)));
+    store.set(QUEST_RECENT_CARE_KEY, json!(care.min(12)));
+    Ok(())
+}
+
+fn record_recent_quest_progress(
+    app: &AppHandle,
+    progress_kind: QuestProgressKind,
+    delta: u32,
+) -> Result<(), String> {
+    if delta == 0 {
+        return Ok(());
+    }
+    let (mut focus, mut care) = load_recent_quest_progress(app)?;
+    let bump = delta.min(3);
+    match progress_kind {
+        QuestProgressKind::Focus => {
+            focus = focus.saturating_add(bump).min(12);
+            care = care.saturating_sub(1);
+        }
+        QuestProgressKind::Care => {
+            care = care.saturating_add(bump).min(12);
+            focus = focus.saturating_sub(1);
+        }
+    }
+    save_recent_quest_progress(app, focus, care)
 }
 
 fn apply_quest_progress(
@@ -521,6 +688,7 @@ fn progress_active_quest(
     if !progressed {
         return Ok(None);
     }
+    let _ = record_recent_quest_progress(app, progress_kind, delta);
 
     if !completed {
         save_active_quest(app, Some(&quest))?;
@@ -637,7 +805,13 @@ pub fn roll_pet_event(
                 resolved: true,
             });
         }
-        let quest = create_quest_for_pet(&pet, load_last_quest_kind(&app)?.as_deref());
+        let (recent_focus, recent_care) = load_recent_quest_progress(&app)?;
+        let quest = create_quest_for_pet(
+            &pet,
+            load_last_quest_kind(&app)?.as_deref(),
+            recent_focus,
+            recent_care,
+        );
         save_active_quest(&app, Some(&quest))?;
         save_last_quest_kind(&app, &quest.kind)?;
         save_last_quest_roll_at(&app, &now.to_rfc3339())?;
@@ -668,6 +842,7 @@ pub fn roll_pet_event(
 mod tests {
     use super::{
         apply_quest_progress, cooldown_remaining_secs, create_quest_for_pet,
+        select_quest_template_for_pet,
         normalize_evolution_thresholds, normalize_species_id, quest_reward_for_stage,
         quest_target_for_stage, validate_variant, QuestProgressKind, ALLOWED_ANIMATIONS,
     };
@@ -775,8 +950,26 @@ mod tests {
     fn create_quest_for_pet_avoids_recent_kind_when_possible() {
         let mut pet = PetState::default();
         pet.total_pomodoros = 4;
-        let quest = create_quest_for_pet(&pet, Some("focus_sessions"));
+        let quest = create_quest_for_pet(&pet, Some("focus_sessions"), 2, 1);
         assert_ne!(quest.kind, "focus_sessions");
+    }
+
+    #[test]
+    fn quest_selection_prefers_care_when_recent_focus_is_high() {
+        let mut pet = PetState::default();
+        pet.current_stage = 2;
+        let template =
+            select_quest_template_for_pet(&pet, Some("focus_sessions"), 6, 1);
+        assert!(template.kind == "care_actions" || template.kind == "mindful_reset");
+    }
+
+    #[test]
+    fn quest_selection_accounts_for_accessory_bias() {
+        let mut pet = PetState::default();
+        pet.current_stage = 2;
+        pet.accessories = vec!["apple".to_string(), "cookie".to_string()];
+        let quest = create_quest_for_pet(&pet, None, 1, 1);
+        assert!(quest.kind == "care_actions" || quest.kind == "mindful_reset");
     }
 
     #[test]

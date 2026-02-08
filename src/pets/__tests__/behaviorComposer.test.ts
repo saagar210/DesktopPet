@@ -7,6 +7,7 @@ describe("behavior composer", () => {
     const result = composePetBehavior({
       species: getSpeciesPackById("corgi"),
       accessories: ["party_hat", "bow_tie"],
+      lastInteraction: null,
       animationState: "idle",
       animationBudget: "low",
       quietModeEnabled: false,
@@ -23,6 +24,7 @@ describe("behavior composer", () => {
     const result = composePetBehavior({
       species: getSpeciesPackById("corgi"),
       accessories: ["party_hat", "bow_tie", "sunglasses"],
+      lastInteraction: null,
       animationState: "working",
       animationBudget: "high",
       quietModeEnabled: false,
@@ -41,6 +43,7 @@ describe("behavior composer", () => {
     const result = composePetBehavior({
       species: getSpeciesPackById("cat"),
       accessories: [],
+      lastInteraction: null,
       animationState: "evolving",
       animationBudget: "medium",
       quietModeEnabled: true,
@@ -55,6 +58,7 @@ describe("behavior composer", () => {
     const result = composePetBehavior({
       species: getSpeciesPackById("penguin"),
       accessories: ["party_hat"],
+      lastInteraction: null,
       animationState: "working",
       animationBudget: "medium",
       quietModeEnabled: true,
@@ -70,6 +74,7 @@ describe("behavior composer", () => {
     const result = composePetBehavior({
       species: getSpeciesPackById("axolotl"),
       accessories: [],
+      lastInteraction: null,
       animationState: "idle",
       animationBudget: "high",
       quietModeEnabled: false,
@@ -77,5 +82,20 @@ describe("behavior composer", () => {
       contextChilled: false,
     });
     expect(result.interactionCooldownMs).toBeLessThan(700);
+  });
+
+  it("adds a subtle quest accent class after quest completion", () => {
+    const result = composePetBehavior({
+      species: getSpeciesPackById("corgi"),
+      accessories: ["scarf"],
+      lastInteraction: "quest_complete",
+      animationState: "idle",
+      animationBudget: "medium",
+      quietModeEnabled: false,
+      focusModeEnabled: false,
+      contextChilled: false,
+    });
+
+    expect(result.accessoryClasses).toContain("quest-accent-scarf");
   });
 });

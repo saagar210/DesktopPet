@@ -7,6 +7,7 @@ type AnimationBudget = "low" | "medium" | "high";
 interface ComposePetBehaviorInput {
   species: PetSpeciesPack;
   accessories: ShopItemId[];
+  lastInteraction: string | null;
   animationState: AnimationState;
   animationBudget: AnimationBudget;
   quietModeEnabled: boolean;
@@ -72,9 +73,11 @@ function shouldPreserveAnimationState(animationState: AnimationState) {
 function buildAccessoryClasses(
   accessories: ShopItemId[],
   shouldChill: boolean,
-  motionLevel: 0 | 1 | 2 | 3
+  motionLevel: 0 | 1 | 2 | 3,
+  lastInteraction: string | null
 ) {
   const classes = new Set<string>();
+  let questAccent: string | null = null;
   for (const accessory of accessories) {
     const profile = ACCESSORY_BEHAVIOR_PROFILES[accessory];
     if (!profile || !profile.behaviorClass) {
@@ -87,6 +90,16 @@ function buildAccessoryClasses(
       continue;
     }
     classes.add(profile.behaviorClass);
+    if (
+      questAccent === null &&
+      lastInteraction === "quest_complete" &&
+      profile.questAccentClass
+    ) {
+      questAccent = profile.questAccentClass;
+    }
+  }
+  if (questAccent && motionLevel >= 1) {
+    classes.add(questAccent);
   }
   return Array.from(classes).join(" ");
 }
@@ -144,7 +157,12 @@ export function composePetBehavior(input: ComposePetBehaviorInput): PetBehaviorC
     speciesMotionClass: `species-${input.species.idleBehavior.baseAnimation}`,
     speciesIntensityClass,
     postureClass,
-    accessoryClasses: buildAccessoryClasses(input.accessories, shouldChill, motionLevel),
+    accessoryClasses: buildAccessoryClasses(
+      input.accessories,
+      shouldChill,
+      motionLevel,
+      input.lastInteraction
+    ),
     interactionCooldownMs,
   };
 }
