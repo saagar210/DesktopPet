@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { copyTextWithFallback } from "../../lib/clipboard";
 import { TIMER_PRESETS } from "../../lib/constants";
 import type { TimerPreset } from "../../lib/constants";
 import type {
@@ -523,16 +524,10 @@ export function SettingsPanel({
                 if (!diagnostics) {
                   return "Unable to load diagnostics";
                 }
-                const payload = JSON.stringify(diagnostics, null, 2);
-                if (navigator.clipboard?.writeText) {
-                  try {
-                    await navigator.clipboard.writeText(payload);
-                    return "Diagnostics copied to clipboard";
-                  } catch {
-                    return `Clipboard write blocked. Diagnostics: ${payload}`;
-                  }
-                }
-                return `Clipboard unavailable. Diagnostics: ${payload}`;
+                return copyTextWithFallback(
+                  JSON.stringify(diagnostics, null, 2),
+                  "Diagnostics"
+                );
               })
             }
           >

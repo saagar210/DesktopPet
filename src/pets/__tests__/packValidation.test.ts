@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSpeciesPack } from "../packValidation";
+import { PACK_VALIDATION_RULEBOOK, validateSpeciesPack } from "../packValidation";
 import { getSpeciesPackById } from "../species";
 
 describe("pack validation", () => {
@@ -21,5 +21,17 @@ describe("pack validation", () => {
     const thresholds = result.checks.find((check) => check.id === "thresholds");
     expect(thresholds?.pass).toBe(false);
     expect(thresholds?.remediation).toContain("Set thresholds");
+  });
+
+  it("keeps validation checks aligned with the rulebook metadata", () => {
+    const result = validateSpeciesPack(getSpeciesPackById("corgi"));
+    const ruleIds = Object.keys(PACK_VALIDATION_RULEBOOK).sort();
+    const checkIds = result.checks.map((check) => check.id).sort();
+    expect(checkIds).toEqual(ruleIds);
+    result.checks.forEach((check) => {
+      const rule = PACK_VALIDATION_RULEBOOK[check.id];
+      expect(check.label).toBe(rule.label);
+      expect(check.remediation).toBe(rule.remediation);
+    });
   });
 });

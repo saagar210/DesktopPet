@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { validateSpeciesPacks } from "../../pets/packValidation";
+import { copyTextWithFallback } from "../../lib/clipboard";
+import {
+  type PackValidationResult,
+  validateSpeciesPacks,
+} from "../../pets/packValidation";
 import { getSpeciesPackById, getSpeciesPacks } from "../../pets/species";
 import { getSeasonalPacks } from "../../pets/seasonalPacks";
 import type { CustomizationLoadout, PetState, Settings, SettingsPatch } from "../../store/types";
@@ -24,6 +28,22 @@ const STYLE_BUNDLES = [
   { name: "Deep Work Orbit", uiTheme: "dusk", petSkin: "neon", petScene: "space" },
 ] as const;
 
+function buildValidationFailureReport(packName: string, result: PackValidationResult) {
+  const failures = result.checks.filter((check) => !check.pass);
+  if (failures.length === 0) {
+    return `${packName} (${result.speciesId}) has no validation failures.`;
+  }
+  return [
+    `Species: ${packName} (${result.speciesId})`,
+    `Failed checks: ${failures.length}`,
+    ...failures.flatMap((check, index) => [
+      `${index + 1}. ${check.label}`,
+      `Observed: ${check.detail}`,
+      `Fix: ${check.remediation}`,
+    ]),
+  ].join("\n");
+}
+
 export function CustomizationPanel({
   settings,
   pet,
@@ -36,6 +56,7 @@ export function CustomizationPanel({
 }: Props) {
   const [loadoutName, setLoadoutName] = useState("");
   const [validationRunAt, setValidationRunAt] = useState<string | null>(null);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const speciesPacks = getSpeciesPacks();
   const speciesValidation = validateSpeciesPacks(speciesPacks);
   const selectableSpeciesIds = new Set([
@@ -165,7 +186,10 @@ export function CustomizationPanel({
             Species Pack Validator
           </h3>
           <button
-            onClick={() => setValidationRunAt(new Date().toLocaleTimeString())}
+            onClick={() => {
+              setValidationRunAt(new Date().toLocaleTimeString());
+              setValidationMessage(null);
+            }}
             className="px-2 py-1 rounded-md text-xs text-white"
             style={{ backgroundColor: "var(--accent-color)" }}
           >
@@ -179,6 +203,14 @@ export function CustomizationPanel({
           <p className="text-[11px]" style={{ color: "var(--muted-color)" }}>
             Last run: {validationRunAt}
           </p>
+        )}
+        {validationMessage && (
+          <div
+            className="text-[11px] rounded-md border px-2 py-1 whitespace-pre-wrap break-words"
+            style={{ color: "var(--muted-color)", borderColor: "var(--border-color)" }}
+          >
+            {validationMessage}
+          </div>
         )}
         <div className="flex flex-col gap-2">
           {speciesValidation.map((result) => {
@@ -202,29 +234,50 @@ export function CustomizationPanel({
                       {result.pass ? "checks passed" : "checks failed"}
                     </div>
                   </div>
-                  <button
-                    aria-label={activated ? `Deactivate ${pack.name}` : `Activate ${pack.name}`}
-                    disabled={!result.pass}
-                    onClick={() => {
-                      if (activated) {
+                  <div className="flex items-center gap-1">
+                    {!result.pass && (
+                      <button
+                        aria-label={`Copy ${pack.name} validation report`}
+                        onClick={() => {
+                          void (async () => {
+                            const report = buildValidationFailureReport(pack.name, result);
+                            const message = await copyTextWithFallback(
+                              report,
+                              "Species validation report"
+                            );
+                            setValidationMessage(message);
+                          })();
+                        }}
+                        className="px-2 py-1 rounded-md text-xs"
+                        style={{ color: "var(--text-color)", border: "1px solid var(--border-color)" }}
+                      >
+                        Copy Report
+                      </button>
+                    )}
+                    <button
+                      aria-label={activated ? `Deactivate ${pack.name}` : `Activate ${pack.name}`}
+                      disabled={!result.pass}
+                      onClick={() => {
+                        if (activated) {
+                          onUpdateSettings({
+                            validatedSpeciesPacks: settings.validatedSpeciesPacks.filter(
+                              (id) => id !== pack.id
+                            ),
+                          });
+                          return;
+                        }
                         onUpdateSettings({
-                          validatedSpeciesPacks: settings.validatedSpeciesPacks.filter(
-                            (id) => id !== pack.id
+                          validatedSpeciesPacks: Array.from(
+                            new Set([...settings.validatedSpeciesPacks, pack.id])
                           ),
                         });
-                        return;
-                      }
-                      onUpdateSettings({
-                        validatedSpeciesPacks: Array.from(
-                          new Set([...settings.validatedSpeciesPacks, pack.id])
-                        ),
-                      });
-                    }}
-                    className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-50"
-                    style={{ backgroundColor: activated ? "#334155" : "var(--accent-color)" }}
-                  >
-                    {activated ? "Deactivate" : "Activate"}
-                  </button>
+                      }}
+                      className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-50"
+                      style={{ backgroundColor: activated ? "#334155" : "var(--accent-color)" }}
+                    >
+                      {activated ? "Deactivate" : "Activate"}
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2 grid grid-cols-1 gap-1">
                   {result.checks.map((check) => (

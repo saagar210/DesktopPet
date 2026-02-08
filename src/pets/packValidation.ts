@@ -1,7 +1,57 @@
 import type { PetSpeciesPack } from "./species";
 
+export type PackValidationRuleId =
+  | "id-slug"
+  | "stage-names"
+  | "thresholds"
+  | "sprites"
+  | "blink-window"
+  | "anchors"
+  | "verbs";
+
+interface PackValidationRuleSpec {
+  label: string;
+  remediation: string;
+}
+
+export const PACK_VALIDATION_RULEBOOK: Record<PackValidationRuleId, PackValidationRuleSpec> = {
+  "id-slug": {
+    label: "Valid species id slug",
+    remediation:
+      "Use lowercase letters, numbers, underscores, or hyphens only (example: my_pet).",
+  },
+  "stage-names": {
+    label: "Exactly 3 stage names",
+    remediation: "Define exactly three names to map to baby, teen, and adult stages.",
+  },
+  thresholds: {
+    label: "Valid ascending evolution thresholds",
+    remediation:
+      "Set thresholds to [0, mid, final] where mid >= 1 and final > mid.",
+  },
+  sprites: {
+    label: "3 stage sprites resolved with supported format",
+    remediation: "Provide one non-empty svg/png/webp sprite path for each stage.",
+  },
+  "blink-window": {
+    label: "Idle blink range is sane",
+    remediation:
+      "Use subtle blink intervals with min >= 1200ms and max greater than min.",
+  },
+  anchors: {
+    label: "Accessory anchors are within sprite bounds",
+    remediation:
+      "Keep all anchor points between 0 and 200 on both axes so accessories render safely.",
+  },
+  verbs: {
+    label: "All core interaction verbs are present",
+    remediation:
+      "Include these verbs in interactionVerbs: pet, feed, play, nap, clean, train.",
+  },
+};
+
 export interface PackValidationCheck {
-  id: string;
+  id: PackValidationRuleId;
   label: string;
   pass: boolean;
   detail: string;
@@ -22,25 +72,27 @@ function anchorInBounds(anchor: { x: number; y: number }) {
   return anchor.x >= 0 && anchor.x <= 200 && anchor.y >= 0 && anchor.y <= 200;
 }
 
+function makeCheck(
+  id: PackValidationRuleId,
+  pass: boolean,
+  detail: string
+): PackValidationCheck {
+  const rule = PACK_VALIDATION_RULEBOOK[id];
+  return {
+    id,
+    label: rule.label,
+    remediation: rule.remediation,
+    pass,
+    detail,
+  };
+}
+
 export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult {
   const checks: PackValidationCheck[] = [];
 
-  checks.push({
-    id: "id-slug",
-    label: "Valid species id slug",
-    pass: isSlug(pack.id),
-    detail: pack.id,
-    remediation:
-      "Use lowercase letters, numbers, underscores, or hyphens only (example: my_pet).",
-  });
+  checks.push(makeCheck("id-slug", isSlug(pack.id), pack.id));
 
-  checks.push({
-    id: "stage-names",
-    label: "Exactly 3 stage names",
-    pass: pack.stageNames.length === 3,
-    detail: `${pack.stageNames.length} names`,
-    remediation: "Define exactly three names to map to baby, teen, and adult stages.",
-  });
+  checks.push(makeCheck("stage-names", pack.stageNames.length === 3, `${pack.stageNames.length} names`));
 
   const thresholds = pack.evolutionThresholds;
   const thresholdsValid =
@@ -48,66 +100,53 @@ export function validateSpeciesPack(pack: PetSpeciesPack): PackValidationResult 
     thresholds[0] === 0 &&
     thresholds[1] >= 1 &&
     thresholds[2] > thresholds[1];
-  checks.push({
-    id: "thresholds",
-    label: "Valid ascending evolution thresholds",
-    pass: thresholdsValid,
-    detail: thresholds.join(" / "),
-    remediation:
-      "Set thresholds to [0, mid, final] where mid >= 1 and final > mid.",
-  });
+  checks.push(makeCheck("thresholds", thresholdsValid, thresholds.join(" / ")));
 
   const spriteChecks = pack.stageSprites.every(
     (sprite) => typeof sprite === "string" && sprite.trim().length > 0
   );
-  checks.push({
-    id: "sprites",
-    label: "3 stage sprites resolved with supported format",
-    pass: spriteChecks && pack.stageSprites.length === 3,
-    detail: `${pack.stageSprites.length} sprite assets`,
-    remediation: "Provide one non-empty svg/png/webp sprite path for each stage.",
-  });
+  checks.push(
+    makeCheck(
+      "sprites",
+      spriteChecks && pack.stageSprites.length === 3,
+      `${pack.stageSprites.length} sprite assets`
+    )
+  );
 
-  checks.push({
-    id: "blink-window",
-    label: "Idle blink range is sane",
-    pass:
+  checks.push(
+    makeCheck(
+      "blink-window",
       pack.idleBehavior.blinkIntervalMs[0] >= 1200 &&
-      pack.idleBehavior.blinkIntervalMs[1] > pack.idleBehavior.blinkIntervalMs[0],
-    detail: `${pack.idleBehavior.blinkIntervalMs[0]}-${pack.idleBehavior.blinkIntervalMs[1]}ms`,
-    remediation:
-      "Use subtle blink intervals with min >= 1200ms and max greater than min.",
-  });
+        pack.idleBehavior.blinkIntervalMs[1] > pack.idleBehavior.blinkIntervalMs[0],
+      `${pack.idleBehavior.blinkIntervalMs[0]}-${pack.idleBehavior.blinkIntervalMs[1]}ms`
+    )
+  );
 
   const anchors = pack.accessoryAnchors;
-  checks.push({
-    id: "anchors",
-    label: "Accessory anchors are within sprite bounds",
-    pass:
+  checks.push(
+    makeCheck(
+      "anchors",
       anchorInBounds(anchors.head) &&
-      anchorInBounds(anchors.neck) &&
-      anchorInBounds(anchors.left) &&
-      anchorInBounds(anchors.right),
-    detail: "head/neck/left/right",
-    remediation:
-      "Keep all anchor points between 0 and 200 on both axes so accessories render safely.",
-  });
+        anchorInBounds(anchors.neck) &&
+        anchorInBounds(anchors.left) &&
+        anchorInBounds(anchors.right),
+      "head/neck/left/right"
+    )
+  );
 
   const verbs = new Set(pack.interactionVerbs.map((verb) => verb.id));
-  checks.push({
-    id: "verbs",
-    label: "All core interaction verbs are present",
-    pass:
+  checks.push(
+    makeCheck(
+      "verbs",
       verbs.has("pet") &&
-      verbs.has("feed") &&
-      verbs.has("play") &&
-      verbs.has("nap") &&
-      verbs.has("clean") &&
-      verbs.has("train"),
-    detail: `${verbs.size} verbs`,
-    remediation:
-      "Include these verbs in interactionVerbs: pet, feed, play, nap, clean, train.",
-  });
+        verbs.has("feed") &&
+        verbs.has("play") &&
+        verbs.has("nap") &&
+        verbs.has("clean") &&
+        verbs.has("train"),
+      `${verbs.size} verbs`
+    )
+  );
 
   return {
     speciesId: pack.id,
