@@ -1,23 +1,38 @@
 use tauri::AppHandle;
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrayBadgeResult {
+    pub used_title: bool,
+    pub used_tooltip: bool,
+}
+
 #[tauri::command]
-pub fn set_tray_badge(app: AppHandle, count: Option<u32>) -> Result<(), String> {
+pub fn set_tray_badge(app: AppHandle, count: Option<u32>) -> Result<TrayBadgeResult, String> {
     let tray = app
         .tray_by_id("main")
         .ok_or_else(|| "Tray icon not found".to_string())?;
 
-    match count.unwrap_or(0) {
+    let result = match count.unwrap_or(0) {
         0 => {
-            let _ = tray.set_tooltip(Some("Desktop Pet"));
-            let _ = tray.set_title(None::<&str>);
+            let used_tooltip = tray.set_tooltip(Some("Desktop Pet")).is_ok();
+            let used_title = tray.set_title(None::<&str>).is_ok();
+            TrayBadgeResult {
+                used_title,
+                used_tooltip,
+            }
         }
         value => {
             let clamped = value.min(99);
             let tooltip = format!("Desktop Pet ({clamped})");
-            let _ = tray.set_tooltip(Some(tooltip));
-            let _ = tray.set_title(Some(clamped.to_string()));
+            let used_tooltip = tray.set_tooltip(Some(tooltip)).is_ok();
+            let used_title = tray.set_title(Some(clamped.to_string())).is_ok();
+            TrayBadgeResult {
+                used_title,
+                used_tooltip,
+            }
         }
-    }
+    };
 
-    Ok(())
+    Ok(result)
 }

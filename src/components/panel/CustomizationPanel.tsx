@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { validateSpeciesPacks } from "../../pets/packValidation";
 import { getSpeciesPackById, getSpeciesPacks } from "../../pets/species";
 import { getSeasonalPacks } from "../../pets/seasonalPacks";
 import type { CustomizationLoadout, PetState, Settings, SettingsPatch } from "../../store/types";
@@ -34,7 +35,13 @@ export function CustomizationPanel({
   onApplyLoadout,
 }: Props) {
   const [loadoutName, setLoadoutName] = useState("");
+  const [validationRunAt, setValidationRunAt] = useState<string | null>(null);
   const speciesPacks = getSpeciesPacks();
+  const speciesValidation = validateSpeciesPacks(speciesPacks);
+  const selectableSpeciesIds = new Set([
+    ...settings.validatedSpeciesPacks,
+    pet.speciesId,
+  ]);
   const seasonalPacks = getSeasonalPacks();
 
   return (
@@ -92,11 +99,13 @@ export function CustomizationPanel({
               color: "var(--text-color)",
             }}
           >
-            {speciesPacks.map((pack) => (
+            {speciesPacks
+              .filter((pack) => selectableSpeciesIds.has(pack.id))
+              .map((pack) => (
               <option key={pack.id} value={pack.id}>
                 {pack.name}
               </option>
-            ))}
+              ))}
           </select>
         </label>
         <label className="text-xs flex flex-col gap-1" style={{ color: "var(--muted-color)" }}>
@@ -145,6 +154,89 @@ export function CustomizationPanel({
             ))}
           </select>
         </label>
+      </div>
+
+      <div
+        className="p-3 rounded-lg border flex flex-col gap-2"
+        style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border-color)" }}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium" style={{ color: "var(--text-color)" }}>
+            Species Pack Validator
+          </h3>
+          <button
+            onClick={() => setValidationRunAt(new Date().toLocaleTimeString())}
+            className="px-2 py-1 rounded-md text-xs text-white"
+            style={{ backgroundColor: "var(--accent-color)" }}
+          >
+            Run Validation
+          </button>
+        </div>
+        <p className="text-xs" style={{ color: "var(--muted-color)" }}>
+          New drop-in species stay locked until all checks pass and you activate the pack.
+        </p>
+        {validationRunAt && (
+          <p className="text-[11px]" style={{ color: "var(--muted-color)" }}>
+            Last run: {validationRunAt}
+          </p>
+        )}
+        <div className="flex flex-col gap-2">
+          {speciesValidation.map((result) => {
+            const pack = speciesPacks.find((item) => item.id === result.speciesId);
+            if (!pack) {
+              return null;
+            }
+            const activated = settings.validatedSpeciesPacks.includes(pack.id);
+            return (
+              <div
+                key={pack.id}
+                className="rounded-md border p-2"
+                style={{ borderColor: "var(--border-color)" }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium" style={{ color: "var(--text-color)" }}>
+                      {pack.name}
+                    </div>
+                    <div className="text-xs capitalize" style={{ color: "var(--muted-color)" }}>
+                      {result.pass ? "checks passed" : "checks failed"}
+                    </div>
+                  </div>
+                  <button
+                    aria-label={activated ? `Deactivate ${pack.name}` : `Activate ${pack.name}`}
+                    disabled={!result.pass}
+                    onClick={() => {
+                      if (activated) {
+                        onUpdateSettings({
+                          validatedSpeciesPacks: settings.validatedSpeciesPacks.filter(
+                            (id) => id !== pack.id
+                          ),
+                        });
+                        return;
+                      }
+                      onUpdateSettings({
+                        validatedSpeciesPacks: Array.from(
+                          new Set([...settings.validatedSpeciesPacks, pack.id])
+                        ),
+                      });
+                    }}
+                    className="px-2 py-1 rounded-md text-xs text-white disabled:opacity-50"
+                    style={{ backgroundColor: activated ? "#334155" : "var(--accent-color)" }}
+                  >
+                    {activated ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+                <div className="mt-2 grid grid-cols-1 gap-1">
+                  {result.checks.map((check) => (
+                    <div key={check.id} className="text-[11px]" style={{ color: "var(--muted-color)" }}>
+                      {check.pass ? "PASS" : "FAIL"} {check.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div
@@ -220,6 +312,11 @@ export function CustomizationPanel({
                           });
                           onSetPetCustomization(bundle.petSkin, bundle.petScene);
                           const species = getSpeciesPackById(bundle.speciesId);
+                          onUpdateSettings({
+                            validatedSpeciesPacks: Array.from(
+                              new Set([...settings.validatedSpeciesPacks, species.id])
+                            ),
+                          });
                           onSetPetSpecies(species.id, species.evolutionThresholds);
                         }}
                         className="text-left px-2 py-2 rounded-md border text-xs transition-opacity hover:opacity-90"

@@ -29,6 +29,11 @@ interface PomodoroState {
   preset: TimerPreset;
 }
 
+interface TrayBadgeResult {
+  usedTitle: boolean;
+  usedTooltip: boolean;
+}
+
 const TIMER_PHASES: TimerPhase[] = ["idle", "work", "break", "celebrating"];
 
 function isTimerPreset(value: string): value is TimerPreset {
@@ -80,6 +85,15 @@ export function usePomodoro() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+  }, []);
+
+  const setTrayBadge = useCallback(async (count: number) => {
+    const result = await invokeMaybe<TrayBadgeResult>("set_tray_badge", { count });
+    if (!result || !result.usedTitle) {
+      window.localStorage.setItem("desktop-pet-tray-fallback-count", String(count));
+    } else {
+      window.localStorage.removeItem("desktop-pet-tray-fallback-count");
     }
   }, []);
 
@@ -294,17 +308,17 @@ export function usePomodoro() {
 
       if (settings.trayBadgeEnabled && notificationEvent !== "timer_idle") {
         trayBadgeCountRef.current += 1;
-        invokeQuiet("set_tray_badge", { count: trayBadgeCountRef.current });
+        void setTrayBadge(trayBadgeCountRef.current);
       }
 
       if (!settings.trayBadgeEnabled) {
         trayBadgeCountRef.current = 0;
-        invokeQuiet("set_tray_badge", { count: 0 });
+        void setTrayBadge(0);
       }
 
       if (notificationEvent === "timer_idle") {
         trayBadgeCountRef.current = 0;
-        invokeQuiet("set_tray_badge", { count: 0 });
+        void setTrayBadge(0);
       }
 
       if (state.phase === "idle") {
@@ -337,7 +351,7 @@ export function usePomodoro() {
         }
       });
     });
-  }, [hydrated, paused, state.phase]);
+  }, [hydrated, paused, setTrayBadge, state.phase]);
 
   useEffect(() => {
     const onBlur = () => {

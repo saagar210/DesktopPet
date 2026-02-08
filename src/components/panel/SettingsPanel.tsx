@@ -81,11 +81,22 @@ export function SettingsPanel({
   const [hostPreview, setHostPreview] = useState(settings.focusBlocklist.join(", "));
   const [opsMessage, setOpsMessage] = useState<string | null>(null);
   const [opsBusy, setOpsBusy] = useState(false);
+  const [trayFallbackCount, setTrayFallbackCount] = useState<number | null>(null);
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setHostPreview(settings.focusBlocklist.join(", "));
   }, [settings.focusBlocklist]);
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem("desktop-pet-tray-fallback-count");
+    if (!raw) {
+      setTrayFallbackCount(null);
+      return;
+    }
+    const count = Number(raw);
+    setTrayFallbackCount(Number.isFinite(count) ? count : null);
+  }, [settings.trayBadgeEnabled, opsMessage]);
 
   const runDataOperation = async (operation: () => Promise<string>) => {
     setOpsBusy(true);
@@ -557,6 +568,18 @@ export function SettingsPanel({
             }}
           >
             {opsMessage}
+          </div>
+        )}
+        {trayFallbackCount !== null && (
+          <div
+            className="text-[11px] border rounded-md px-2 py-1"
+            style={{
+              color: "var(--muted-color)",
+              borderColor: "var(--border-color)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            Tray title badges are unavailable on this platform. Fallback count: {trayFallbackCount}
           </div>
         )}
       </div>

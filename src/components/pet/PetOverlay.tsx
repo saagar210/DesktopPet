@@ -102,6 +102,7 @@ export function PetOverlay() {
         meetingHosts: ["zoom.us", "meet.google.com", "teams.microsoft.com"],
         heavyTypingThresholdCpm: 220,
         enabledSeasonalPacks: [],
+        validatedSpeciesPacks: ["penguin"],
         uiTheme: "sunrise",
         petSkin: "classic",
         petScene: "meadow",

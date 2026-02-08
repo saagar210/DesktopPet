@@ -110,6 +110,11 @@ pub(crate) fn sanitize_settings(settings: &mut Settings) {
         .clamp(MIN_TYPING_THRESHOLD_CPM, MAX_TYPING_THRESHOLD_CPM);
     settings.enabled_seasonal_packs =
         normalize_pack_ids(std::mem::take(&mut settings.enabled_seasonal_packs));
+    settings.validated_species_packs =
+        normalize_pack_ids(std::mem::take(&mut settings.validated_species_packs));
+    if settings.validated_species_packs.is_empty() {
+        settings.validated_species_packs.push("penguin".to_string());
+    }
     settings.focus_allowlist = normalize_host_list(std::mem::take(&mut settings.focus_allowlist));
     settings.focus_blocklist = normalize_host_list(std::mem::take(&mut settings.focus_blocklist));
 }
@@ -207,6 +212,9 @@ fn sanitize_patch(mut patch: SettingsPatch) -> Result<SettingsPatch, String> {
     }
     if let Some(enabled_seasonal_packs) = patch.enabled_seasonal_packs.take() {
         patch.enabled_seasonal_packs = Some(normalize_pack_ids(enabled_seasonal_packs));
+    }
+    if let Some(validated_species_packs) = patch.validated_species_packs.take() {
+        patch.validated_species_packs = Some(normalize_pack_ids(validated_species_packs));
     }
     if let Some(allowlist) = patch.focus_allowlist.take() {
         patch.focus_allowlist = Some(normalize_host_list(allowlist));

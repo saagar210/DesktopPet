@@ -66,6 +66,7 @@ export interface Settings {
   meetingHosts: string[];
   heavyTypingThresholdCpm: number;
   enabledSeasonalPacks: string[];
+  validatedSpeciesPacks: string[];
   uiTheme: string;
   petSkin: string;
   petScene: string;
@@ -93,6 +94,7 @@ export interface SettingsPatch {
   meetingHosts?: string[];
   heavyTypingThresholdCpm?: number;
   enabledSeasonalPacks?: string[];
+  validatedSpeciesPacks?: string[];
   uiTheme?: string;
   petSkin?: string;
   petScene?: string;

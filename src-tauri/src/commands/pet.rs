@@ -183,6 +183,19 @@ fn create_quest_for_pet(pet: &PetState) -> PetQuest {
     }
 }
 
+fn apply_quest_progress(
+    mut quest: PetQuest,
+    supported_kind: &str,
+    delta: u32,
+) -> (PetQuest, bool, bool) {
+    if quest.kind != supported_kind {
+        return (quest, false, false);
+    }
+    quest.completed_sessions = quest.completed_sessions.saturating_add(delta);
+    let completed = quest.completed_sessions >= quest.target_sessions;
+    (quest, true, completed)
+}
+
 fn load_events(app: &AppHandle) -> Result<Vec<PetEvent>, String> {
     let store = app.store("store.json").map_err(|e| e.to_string())?;
     Ok(store
@@ -415,18 +428,17 @@ fn progress_active_quest(
     supported_kind: &str,
     delta: u32,
 ) -> Result<Option<PetEvent>, String> {
-    let mut quest = match load_active_quest(app)? {
+    let quest = match load_active_quest(app)? {
         Some(quest) => quest,
         None => return Ok(None),
     };
 
-    if quest.kind != supported_kind {
+    let (quest, progressed, completed) = apply_quest_progress(quest, supported_kind, delta);
+    if !progressed {
         return Ok(None);
     }
 
-    quest.completed_sessions = quest.completed_sessions.saturating_add(delta);
-
-    if quest.completed_sessions < quest.target_sessions {
+    if !completed {
         save_active_quest(app, Some(&quest))?;
         let _ = append_event(
             app,
@@ -549,9 +561,10 @@ pub fn roll_pet_event(
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_evolution_thresholds, normalize_species_id, quest_reward_for_stage,
-        quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
+        apply_quest_progress, normalize_evolution_thresholds, normalize_species_id,
+        quest_reward_for_stage, quest_target_for_stage, validate_variant, ALLOWED_ANIMATIONS,
     };
+    use crate::models::PetQuest;
 
     #[test]
     fn quest_target_scales_by_stage() {
@@ -585,5 +598,43 @@ mod tests {
     fn normalize_evolution_thresholds_repairs_invalid_input() {
         assert_eq!(normalize_evolution_thresholds(Some(vec![0, 0, 0])), vec![0, 1, 2]);
         assert_eq!(normalize_evolution_thresholds(Some(vec![0, 8, 4])), vec![0, 8, 9]);
+    }
+
+    #[test]
+    fn apply_quest_progress_ignores_other_kinds() {
+        let quest = PetQuest {
+            id: "q1".to_string(),
+            kind: "care_actions".to_string(),
+            title: "Gentle Care".to_string(),
+            description: "Do care actions".to_string(),
+            target_sessions: 2,
+            completed_sessions: 0,
+            reward_coins: 10,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+        };
+
+        let (updated, progressed, completed) = apply_quest_progress(quest, "focus_sessions", 1);
+        assert_eq!(updated.completed_sessions, 0);
+        assert!(!progressed);
+        assert!(!completed);
+    }
+
+    #[test]
+    fn apply_quest_progress_marks_completion() {
+        let quest = PetQuest {
+            id: "q2".to_string(),
+            kind: "focus_sessions".to_string(),
+            title: "Steady Focus".to_string(),
+            description: "Do focus sessions".to_string(),
+            target_sessions: 2,
+            completed_sessions: 1,
+            reward_coins: 10,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+        };
+
+        let (updated, progressed, completed) = apply_quest_progress(quest, "focus_sessions", 1);
+        assert!(progressed);
+        assert!(completed);
+        assert_eq!(updated.completed_sessions, 2);
     }
 }

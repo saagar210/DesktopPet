@@ -147,6 +147,7 @@ pub struct Settings {
     pub meeting_hosts: Vec<String>,
     pub heavy_typing_threshold_cpm: u32,
     pub enabled_seasonal_packs: Vec<String>,
+    pub validated_species_packs: Vec<String>,
     pub ui_theme: String,
     pub pet_skin: String,
     pub pet_scene: String,
@@ -183,6 +184,7 @@ impl Default for Settings {
             ],
             heavy_typing_threshold_cpm: 220,
             enabled_seasonal_packs: vec![],
+            validated_species_packs: vec!["penguin".to_string()],
             ui_theme: "sunrise".to_string(),
             pet_skin: "classic".to_string(),
             pet_scene: "meadow".to_string(),
@@ -214,6 +216,7 @@ pub struct SettingsPatch {
     pub meeting_hosts: Option<Vec<String>>,
     pub heavy_typing_threshold_cpm: Option<u32>,
     pub enabled_seasonal_packs: Option<Vec<String>>,
+    pub validated_species_packs: Option<Vec<String>>,
     pub ui_theme: Option<String>,
     pub pet_skin: Option<String>,
     pub pet_scene: Option<String>,
@@ -275,6 +278,9 @@ impl SettingsPatch {
         }
         if let Some(enabled_seasonal_packs) = self.enabled_seasonal_packs {
             settings.enabled_seasonal_packs = enabled_seasonal_packs;
+        }
+        if let Some(validated_species_packs) = self.validated_species_packs {
+            settings.validated_species_packs = validated_species_packs;
         }
         if let Some(ui_theme) = self.ui_theme {
             settings.ui_theme = ui_theme;
@@ -807,6 +813,7 @@ mod tests {
         assert_eq!(s.animation_budget, "medium");
         assert_eq!(s.heavy_typing_threshold_cpm, 220);
         assert!(s.enabled_seasonal_packs.is_empty());
+        assert_eq!(s.validated_species_packs, vec!["penguin".to_string()]);
         assert_eq!(s.ui_theme, "sunrise");
         assert_eq!(s.pet_skin, "classic");
         assert_eq!(s.pet_scene, "meadow");
@@ -828,6 +835,7 @@ mod tests {
         assert!(json.get("contextAwareChillEnabled").is_some());
         assert!(json.get("meetingHosts").is_some());
         assert!(json.get("enabledSeasonalPacks").is_some());
+        assert!(json.get("validatedSpeciesPacks").is_some());
         assert!(json.get("uiTheme").is_some());
         assert!(json.get("petSkin").is_some());
         assert!(json.get("petScene").is_some());
@@ -856,6 +864,7 @@ mod tests {
             meeting_hosts: vec!["meet.google.com".to_string()],
             heavy_typing_threshold_cpm: 260,
             enabled_seasonal_packs: vec!["spring-blossom".to_string()],
+            validated_species_packs: vec!["penguin".to_string(), "cat".to_string()],
             ui_theme: "dusk".to_string(),
             pet_skin: "pixel".to_string(),
             pet_scene: "forest".to_string(),
@@ -888,6 +897,10 @@ mod tests {
             restored.enabled_seasonal_packs,
             vec!["spring-blossom".to_string()]
         );
+        assert_eq!(
+            restored.validated_species_packs,
+            vec!["penguin".to_string(), "cat".to_string()]
+        );
         assert_eq!(restored.ui_theme, "dusk");
         assert_eq!(restored.pet_skin, "pixel");
         assert_eq!(restored.pet_scene, "forest");
@@ -917,6 +930,7 @@ mod tests {
             meeting_hosts: Some(vec!["zoom.us".to_string()]),
             heavy_typing_threshold_cpm: Some(260),
             enabled_seasonal_packs: Some(vec!["spring-bloom".to_string()]),
+            validated_species_packs: Some(vec!["penguin".to_string(), "cat".to_string()]),
             ui_theme: Some("dusk".to_string()),
             pet_skin: Some("plush".to_string()),
             pet_scene: Some("forest".to_string()),
@@ -944,6 +958,7 @@ mod tests {
         assert_eq!(settings.meeting_hosts, vec!["zoom.us"]);
         assert_eq!(settings.heavy_typing_threshold_cpm, 260);
         assert_eq!(settings.enabled_seasonal_packs, vec!["spring-bloom"]);
+        assert_eq!(settings.validated_species_packs, vec!["penguin", "cat"]);
         assert_eq!(settings.ui_theme, "dusk");
         assert_eq!(settings.pet_skin, "plush");
         assert_eq!(settings.pet_scene, "forest");

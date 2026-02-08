@@ -40,10 +40,20 @@ interface RawSpeciesPack {
 }
 
 const rawPacks = import.meta.glob("./packs/*.json", { eager: true });
-const spriteAssets = import.meta.glob("./sprites/*.svg", {
-  eager: true,
-  import: "default",
-}) as Record<string, string>;
+const spriteAssets = {
+  ...(import.meta.glob("./sprites/*.svg", {
+    eager: true,
+    import: "default",
+  }) as Record<string, string>),
+  ...(import.meta.glob("./sprites/*.png", {
+    eager: true,
+    import: "default",
+  }) as Record<string, string>),
+  ...(import.meta.glob("./sprites/*.webp", {
+    eager: true,
+    import: "default",
+  }) as Record<string, string>),
+};
 
 function resolveSprite(fileName: string): string {
   const entry = Object.entries(spriteAssets).find(([path]) => path.endsWith(`/${fileName}`));
