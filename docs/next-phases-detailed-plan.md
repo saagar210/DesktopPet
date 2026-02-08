@@ -134,7 +134,7 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 - Stop if reward totals drift beyond stage pacing envelope.
 - Go only when stage reward regression tests and photo booth theme tests pass.
 
-### Iteration C (next): Optional Seasonal Packs + Calm QA
+### Iteration C (completed): Optional Seasonal Packs + Calm QA
 - Deliverables
 - Optional seasonal cosmetic packs remain disabled by default.
 - Seasonal pack activation/deactivation flow in customization with clear calm copy.
@@ -160,6 +160,7 @@ This plan is intentionally detailed so execution can proceed in larger batches w
 ### Phase Stop/Go Checkpoint
 - Stop if quest notifications exceed whitelist policy.
 - Go only when reward accounting and quest completion tests pass across stage boundaries.
+- Status: complete on February 8, 2026 (`docs/manual-qa-runs/2026-02-08-phase9-pr3.md`).
 
 ## Phase 10: Polish + Release Hardening
 
