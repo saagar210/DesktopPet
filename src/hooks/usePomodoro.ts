@@ -44,6 +44,18 @@ function normalizePhase(phase: string): TimerPhase {
   return TIMER_PHASES.includes(phase as TimerPhase) ? (phase as TimerPhase) : "idle";
 }
 
+
+function getRotatingSample(hosts: string[], sampleSize: number, startIndex: number) {
+  if (hosts.length <= sampleSize) {
+    return hosts;
+  }
+  const output: string[] = [];
+  for (let i = 0; i < sampleSize; i += 1) {
+    output.push(hosts[(startIndex + i) % hosts.length]);
+  }
+  return output;
+}
+
 function playSoundCue(volume: number) {
   try {
     const audio = new AudioContext();
@@ -80,6 +92,7 @@ export function usePomodoro() {
   const previousPhaseRef = useRef<TimerPhase>("idle");
   const toastHistoryRef = useRef<number[]>([]);
   const trayBadgeCountRef = useRef(0);
+  const hostSampleOffsetRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) {
@@ -326,7 +339,15 @@ export function usePomodoro() {
         return;
       }
 
-      const sampledHosts = settings.focusBlocklist.slice(0, 5);
+      const sampledHosts = getRotatingSample(
+        settings.focusBlocklist,
+        5,
+        hostSampleOffsetRef.current
+      );
+      hostSampleOffsetRef.current =
+        settings.focusBlocklist.length === 0
+          ? 0
+          : (hostSampleOffsetRef.current + 5) % settings.focusBlocklist.length;
       invokeMaybe<FocusGuardrailsStatus>("apply_focus_guardrails_intervention", {
         phase: state.phase,
         hosts: sampledHosts,
@@ -358,13 +379,22 @@ export function usePomodoro() {
       if (state.phase !== "work") return;
       invokeMaybe<Settings>("get_settings").then((settings) => {
         if (!settings?.focusGuardrailsEnabled) return;
+        const sampledHosts = getRotatingSample(
+          settings.focusBlocklist,
+          5,
+          hostSampleOffsetRef.current
+        );
+        hostSampleOffsetRef.current =
+          settings.focusBlocklist.length === 0
+            ? 0
+            : (hostSampleOffsetRef.current + 5) % settings.focusBlocklist.length;
         invokeMaybe<FocusGuardrailsStatus>("apply_focus_guardrails_intervention", {
           phase: "work",
-          hosts: settings.focusBlocklist.slice(0, 5),
+          hosts: sampledHosts,
         }).then((status) => {
           if (!status?.active) return;
           setGuardrailMessage(
-            `Intervention: ${status.message} (${status.matchedBlocklist.join(", ") || "no host details"})`
+            `Intervention: ${status.message} (${status.matchedBlocklist.join(", ") || "no host details"}; sampled ${sampledHosts.length} hosts)`
           );
           if (status.recommendedAction === "pause_timer" && !paused) {
             setPaused(true);

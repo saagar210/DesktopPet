@@ -1,61 +1,165 @@
-# Next Steps Implementation Plan
+# Next Steps Implementation Plan (Phases 13-17)
 
-Date: February 8, 2026
+Date: February 10, 2026
 
-## Scope
-Implement all previously proposed next steps and close known risks/follow-ups:
-1. Pack validator before species activation.
-2. Tauri smoke script for species switch + quest completion + photo booth.
-3. Visual polish pass for placeholder species output.
-4. Risk mitigation for context-aware chill heuristics, pack-format assumptions, and tray badge platform variance.
+## Goal
+Shift from "feature complete" to "reliable daily driver" by improving runtime reliability, guardrail quality, analytics usefulness, onboarding, and pack ecosystem growth.
 
-## Plan
+## Phase 13 — Runtime Confidence & Packaging Reliability
 
-### Step 1: Pack Validation Gate (Activation Required)
-- Build deterministic pack checks (id, thresholds, sprite formats, anchor bounds, verbs, blink range).
-- Add a "Species Pack Validator" UI in customization.
-- Keep species locked until explicit activation.
-- Persist activated packs in settings (`validatedSpeciesPacks`).
+### Scope
+- Add Linux native dependency preflight script for Tauri Rust/build workflows.
+- Add environment diagnostics to smoke script output.
+- Wire preflight into verification flow.
+- Document Linux preflight and dependency expectations.
 
-Success criteria
-- New drop-in packs appear in validator.
-- Invalid packs cannot be activated.
-- Species selector only shows activated packs (plus current species fallback).
+### Deliverables
+- `scripts/tauri-preflight.sh`
+- `scripts/tauri-smoke.sh` environment + preflight checks
+- `scripts/verify.sh` runs preflight before Rust/Tauri build
+- `package.json` script: `test:tauri-preflight`
+- Docs updates in `README.md` and `docs/debugging.md`
 
-### Step 2: Smoke Coverage
-- Add focused smoke tests for:
-  - Pack activation flow in customization.
-  - Photo booth user-triggered capture flow.
-  - Quest completion progression helper in Rust.
-- Add a smoke runner script and package script entry.
+### Acceptance Criteria
+- `npm run test:tauri-preflight` passes on correctly provisioned Linux hosts.
+- `npm run test:smoke` prints environment diagnostics.
+- `./scripts/verify.sh` fails early when Linux dependencies are missing.
 
-Success criteria
-- `npm run test:smoke` passes locally.
-- Smoke suite covers species-switch gating + quest-complete logic + photo-booth path.
+### Effort Estimate
+- Engineering: 1–2 days
+- QA/docs: 0.5 day
+- Total: 1.5–2.5 days
 
-### Step 3: Visual Polish
-- Improve sprite presentation with cleaner depth/shadow treatment and refined overlay rendering.
-- Keep low distraction defaults (no flashing, no aggressive motion).
+### Price Estimate (contractor planning)
+- Low: $1,200
+- Mid: $2,000
+- High: $2,800
 
-Success criteria
-- Pet visuals appear cleaner/cuter while preserving calm behavior.
-- Animation budgets still throttle as expected.
+## Phase 14 — Guardrails + Context-Aware Chill Accuracy
 
-### Step 4: Risk Mitigations
-- Context-aware chill risk:
-  - Keep heuristics local/configurable and make thresholds visible in settings.
-- Pack assumption risk:
-  - Support additional sprite formats (`svg`, `png`, `webp`) and validate expectations.
-- Tray badge variance risk:
-  - Return tray capability result from backend and provide local fallback count display.
+### Scope
+- Improve guardrail decision visibility in settings (why intervention fired).
+- Add deterministic simulation fixtures for host/phase matching.
+- Replace static host sampling with rotating sample strategy in timer interventions.
 
-Success criteria
-- Platform limitations degrade gracefully without breaking UX.
-- Settings and validation surfaces make constraints explicit.
+### Deliverables
+- Expanded focus guardrails unit tests (frontend + Rust helper tests)
+- Settings diagnostics section for latest intervention context
+- Timer hook sampling strategy update
 
-## Verification
+### Acceptance Criteria
+- False-positive bug reports decrease in manual QA runs.
+- Intervention context is visible and copyable in UI diagnostics.
+- Guardrail simulation suite is green in CI.
+
+### Effort Estimate
+- Engineering: 3–5 days
+- QA/docs: 1 day
+- Total: 4–6 days
+
+### Price Estimate
+- Low: $3,200
+- Mid: $5,000
+- High: $7,200
+
+## Phase 15 — Actionable Stats & Weekly Recap
+
+### Scope
+- Upgrade stats panel from raw counters to trend and action cards.
+- Add weekly recap export.
+- Add recommendation layer based on consistency and guardrail pressure.
+
+### Deliverables
+- Trend cards in `StatsPanel`
+- Weekly recap generator (JSON + markdown export)
+- Recommendation logic tests
+
+### Acceptance Criteria
+- Stats panel surfaces trend direction (up/down/flat) for at least 3 core metrics.
+- Weekly recap export works from panel.
+- Recommendation snapshots pass deterministic tests.
+
+### Effort Estimate
+- Engineering: 4–6 days
+- QA/docs: 1 day
+- Total: 5–7 days
+
+### Price Estimate
+- Low: $4,000
+- Mid: $6,400
+- High: $8,600
+
+## Phase 16 — Onboarding & First-Week Retention
+
+### Scope
+- Build first-run setup wizard (preset, calm defaults, species activation, quick task).
+- Add progressive disclosure for advanced settings.
+- Add first-week check-in prompts in panel (quiet, inline only).
+
+### Deliverables
+- Onboarding state machine and UI flow
+- First-week checklist card
+- Regression tests for non-nag behavior
+
+### Acceptance Criteria
+- New user can start first focus session in <2 minutes.
+- Advanced settings are hidden by default, discoverable on demand.
+- No autonomous popups introduced.
+
+### Effort Estimate
+- Engineering: 5–8 days
+- QA/docs: 1–2 days
+- Total: 6–10 days
+
+### Price Estimate
+- Low: $5,500
+- Mid: $8,800
+- High: $12,500
+
+## Phase 17 — Pack Ecosystem UX
+
+### Scope
+- Add local pack inbox/import flow with validator result summaries.
+- Add pack health badges and compatibility messaging.
+- Add optional curated local bundle install UX.
+
+### Deliverables
+- Pack import UI + validation report viewer
+- Pack health metadata in customization panel
+- Extended pack QA docs and troubleshooting
+
+### Acceptance Criteria
+- Users can import a pack locally and understand pass/fail in one screen.
+- Invalid packs are blocked with remediation guidance.
+- Compatibility state is surfaced before activation.
+
+### Effort Estimate
+- Engineering: 6–9 days
+- QA/docs: 1–2 days
+- Total: 7–11 days
+
+### Price Estimate
+- Low: $6,800
+- Mid: $10,500
+- High: $14,500
+
+## Consolidated Delivery Window
+- Sequential execution: ~24 to 36 working days.
+- Parallelized (2 engineers): ~14 to 22 working days.
+
+## Recommended Execution Order
+1. Phase 13 (dependency + verification reliability)
+2. Phase 14 (guardrail/chill quality)
+3. Phase 16 (onboarding and retention)
+4. Phase 15 (actionable analytics)
+5. Phase 17 (pack ecosystem UX)
+
+## Verification Matrix for Every Phase
 - `npm test`
 - `npm run test:smoke`
+- `npm run test:pack-qa`
 - `npm run build`
+- `npm run check:performance-budget`
+- `npm run test:tauri-preflight`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
-- `./scripts/verify.sh` (final full gate)
+- `npm run tauri build`

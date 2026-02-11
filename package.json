@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:smoke": "./scripts/tauri-smoke.sh",
     "test:watch": "vitest",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:tauri-preflight": "./scripts/tauri-preflight.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
