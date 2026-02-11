@@ -33,6 +33,18 @@ Use Settings -> Data & Diagnostics:
 - Focus guardrails mismatches:
   - verify host normalization and suffix match rules
 
+
+## Linux Tauri Dependency Preflight
+
+Before Rust tests or bundle builds on Linux, run:
+
+```bash
+npm run test:tauri-preflight
+```
+
+This checks for `pkg-config`, `glib-2.0`, and WebKitGTK (`webkit2gtk-4.1` or `webkit2gtk-4.0`).
+If preflight fails, install the missing distro packages before running cargo/Tauri commands.
+
 ## Build/Bundle Failures
 
 - Ensure Xcode CLI tools are installed on macOS.

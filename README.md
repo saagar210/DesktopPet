@@ -68,6 +68,7 @@ This runs:
 - `npm run test:pack-qa`
 - `npm run build`
 - `npm run check:performance-budget`
+- `npm run test:tauri-preflight`
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `npm run tauri build`
 
