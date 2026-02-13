@@ -4,6 +4,9 @@ mod models;
 mod progression;
 mod storage;
 
+#[cfg(test)]
+mod tests;
+
 use crate::events::{
     EVENT_TRAY_SET_PRESET, EVENT_TRAY_TIMER_PAUSE, EVENT_TRAY_TIMER_RESET, EVENT_TRAY_TIMER_RESUME,
     EVENT_TRAY_TIMER_START,
