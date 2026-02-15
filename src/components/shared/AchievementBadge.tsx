@@ -36,7 +36,7 @@ export function AchievementBadge({
           : "border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-800 opacity-60"
       }`}
       title={
-        isUnlocked
+        isUnlocked && achievement.unlockedAt
           ? `${achievement.title} - Unlocked ${new Date(achievement.unlockedAt).toLocaleDateString()}`
           : achievement.description
       }

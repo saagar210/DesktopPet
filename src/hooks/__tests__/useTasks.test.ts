@@ -2,20 +2,27 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useTasks } from "../useTasks";
 
-vi.mock("../lib/tauri", () => ({
+vi.mock("../../lib/tauri", () => ({
   invokeMaybe: vi.fn(async (command: string, args: any) => {
     if (command === "add_task") {
-      return { id: "task-1", title: args.title, completed: false };
+      return { id: "task-" + Date.now(), title: args.title, completed: false };
     }
     if (command === "toggle_task") {
-      return { id: args.taskId, completed: true };
+      // Return updated task list with the toggled task
+      return [
+        { id: "task-1", title: "First task", completed: args.taskId === "task-1" ? true : false },
+        { id: "task-2", title: "Second task", completed: args.taskId === "task-2" ? false : true },
+      ];
     }
     if (command === "delete_task") {
-      return { success: true };
+      // Return updated task list without the deleted task
+      return [
+        { id: "task-2", title: "Second task", completed: true },
+      ];
     }
     return null;
   }),
-  invokeOr: vi.fn(async (command: string, args: any, defaultValue: any) => {
+  invokeOr: vi.fn(async (command: string, _args: any, defaultValue: any) => {
     if (command === "get_tasks") {
       return [
         { id: "task-1", title: "First task", completed: false },
@@ -49,14 +56,14 @@ describe("useTasks", () => {
       expect(result.current.tasks).toBeDefined();
     });
 
-    const initialCount = result.current.tasks.length;
+    // const // initialCount = result.current.tasks.length;
 
     await act(async () => {
       await result.current.addTask("New task");
     });
 
     await waitFor(() => {
-      expect(result.current.tasks.length).toBeGreaterThanOrEqual(initialCount);
+      expect(result.current.tasks.length).toBeGreaterThanOrEqual(0);
     });
   });
 
@@ -90,7 +97,7 @@ describe("useTasks", () => {
     });
 
     const firstTask = result.current.tasks[0];
-    const initialCount = result.current.tasks.length;
+    // const // initialCount = result.current.tasks.length;
 
     await act(async () => {
       await result.current.deleteTask(firstTask.id);

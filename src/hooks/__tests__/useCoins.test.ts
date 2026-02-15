@@ -2,16 +2,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useCoins } from "../useCoins";
 
-vi.mock("../lib/tauri", () => ({
-  invokeMaybe: vi.fn(async (command: string, args: any) => {
+vi.mock("../../lib/tauri", () => ({
+  invokeMaybe: vi.fn(async (command: string, _args: any) => {
     if (command === "spend_coins") {
-      return { balance: 100 - args.amount, success: true };
+      return { total: 100, spent: _args.amount };
     }
     return null;
   }),
-  invokeOr: vi.fn(async (command: string, args: any, defaultValue: any) => {
+  invokeOr: vi.fn(async (command: string, _args: any, defaultValue: any) => {
     if (command === "get_coin_balance") {
-      return 100;
+      return { total: 100, spent: 0 };
     }
     return defaultValue;
   }),
@@ -27,25 +27,26 @@ describe("useCoins", () => {
     const { result } = renderHook(() => useCoins());
 
     await waitFor(() => {
-      expect(result.current.balance).toBeDefined();
+      expect(result.current.coins.total).toBe(100);
     });
 
-    expect(result.current.balance).toBe(100);
+    expect(result.current.available).toBe(100);
   });
 
   it("should spend coins and update balance", async () => {
     const { result } = renderHook(() => useCoins());
 
     await waitFor(() => {
-      expect(result.current.balance).toBe(100);
+      expect(result.current.coins.total).toBe(100);
     });
 
     await act(async () => {
-      await result.current.spend(10, "test");
+      await result.current.spend(10);
     });
 
     await waitFor(() => {
-      expect(result.current.balance).toBe(90);
+      expect(result.current.coins.spent).toBe(10);
+      expect(result.current.available).toBe(90);
     });
   });
 
@@ -53,23 +54,23 @@ describe("useCoins", () => {
     const { result } = renderHook(() => useCoins());
 
     await waitFor(() => {
-      expect(result.current.balance).toBe(100);
+      expect(result.current.coins.total).toBe(100);
     });
 
     // Attempt to spend more than balance
-    const result2 = await result.current.spend(150, "test");
+    const result2 = await result.current.spend(150);
 
     // Should handle gracefully (either return error or prevent)
-    expect(typeof result2).toBeDefined();
+    expect(result2).toBeDefined();
   });
 
   it("should track coin changes from events", async () => {
     const { result } = renderHook(() => useCoins());
 
     await waitFor(() => {
-      expect(result.current.balance).toBe(100);
+      expect(result.current.coins.total).toBe(100);
     });
 
-    expect(result.current.balance).toBeGreaterThanOrEqual(0);
+    expect(result.current.available).toBeGreaterThanOrEqual(0);
   });
 });

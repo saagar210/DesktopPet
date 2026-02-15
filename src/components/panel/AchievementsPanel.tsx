@@ -18,8 +18,6 @@ export function AchievementsPanel() {
     stats,
     loading,
     getByCategory,
-    getUnlocked,
-    getLocked,
     getCompletionPercent,
   } = useAchievements();
 

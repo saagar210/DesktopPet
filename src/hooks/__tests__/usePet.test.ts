@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { usePet } from "../usePet";
 
 // Mock Tauri
-vi.mock("../lib/tauri", () => ({
+vi.mock("../../lib/tauri", () => ({
   invokeMaybe: vi.fn(async (command: string) => {
     if (command === "pet_interact") {
       return {
@@ -38,7 +38,7 @@ vi.mock("../lib/tauri", () => ({
     }
     return null;
   }),
-  invokeOr: vi.fn(async (command: string, args: any, defaultValue: any) => {
+  invokeOr: vi.fn(async (command: string, _args: any, defaultValue: any) => {
     if (command === "get_pet_state") {
       return {
         currentStage: 0,

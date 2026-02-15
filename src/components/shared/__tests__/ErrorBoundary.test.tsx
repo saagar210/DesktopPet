@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ErrorBoundary } from "../ErrorBoundary";
 
@@ -37,8 +37,8 @@ describe("ErrorBoundary", () => {
   });
 
   it("should display error details in development mode", () => {
-    const originalEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    // const originalEnv = process.env.NODE_ENV;
+    // process.env.NODE_ENV = "development";
 
     const ThrowError = () => {
       throw new Error("Test error message");
@@ -54,7 +54,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Error Details (Dev Only)")).toBeInTheDocument();
     expect(screen.getByText(/Test error message/)).toBeInTheDocument();
 
-    process.env.NODE_ENV = originalEnv;
+    // process.env.NODE_ENV = originalEnv;
   });
 
   it("should call onError callback when error is caught", () => {
@@ -86,7 +86,7 @@ describe("ErrorBoundary", () => {
       return <div data-testid="recovered-content">Recovered!</div>;
     };
 
-    const { rerender } = render(
+    render(
       <ErrorBoundary>
         <ConditionalError />
       </ErrorBoundary>
@@ -97,19 +97,15 @@ describe("ErrorBoundary", () => {
     // Simulate recovery by disabling error
     shouldThrow = false;
 
-    // Click "Try Again" button
+    // Click "Try Again" button - this resets the error boundary state
     const tryAgainButton = screen.getByRole("button", { name: /Try Again/i });
     await user.click(tryAgainButton);
 
-    rerender(
-      <ErrorBoundary>
-        <ConditionalError />
-      </ErrorBoundary>
-    );
-
-    // Note: In a real scenario, the component would need to be re-rendered properly.
-    // This test demonstrates the button exists and is clickable.
-    expect(tryAgainButton).toBeInTheDocument();
+    // After reset, the children should attempt to render again
+    // Since shouldThrow is now false, it should render successfully
+    await waitFor(() => {
+      expect(screen.getByTestId("recovered-content")).toBeInTheDocument();
+    });
   });
 
   it("should display reload button", () => {
