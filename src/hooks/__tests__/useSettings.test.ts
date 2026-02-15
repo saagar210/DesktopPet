@@ -32,7 +32,7 @@ vi.mock("../lib/tauri", () => ({
     }
     return defaultValue;
   }),
-  listenSafe: vi.fn(() => Promise.resolve(() => {})),
+  listenSafe: vi.fn(function() { return Promise.resolve(() => {}) }),
 }));
 
 describe("useSettings", () => {
