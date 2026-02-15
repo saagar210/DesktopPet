@@ -24,8 +24,9 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StatsPanel } from "./StatsPanel";
 import { CustomizationPanel } from "./CustomizationPanel";
 import { PetPanel } from "./PetPanel";
+import { AchievementsPanel } from "./AchievementsPanel";
 
-type Tab = "timer" | "pet" | "goals" | "tasks" | "shop" | "stats" | "customize" | "settings";
+type Tab = "timer" | "pet" | "goals" | "tasks" | "shop" | "stats" | "achievements" | "customize" | "settings";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "timer", label: "Timer" },
@@ -34,6 +35,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "tasks", label: "Tasks" },
   { id: "shop", label: "Shop" },
   { id: "stats", label: "Stats" },
+  { id: "achievements", label: "Achievements" },
   { id: "customize", label: "Customize" },
   { id: "settings", label: "Settings" },
 ];
@@ -214,6 +216,9 @@ export function ControlPanel() {
         )}
         {tab === "stats" && (
           <StatsPanel progress={progress} summaries={summaries} />
+        )}
+        {tab === "achievements" && (
+          <AchievementsPanel />
         )}
         {tab === "customize" && (
           <CustomizationPanel

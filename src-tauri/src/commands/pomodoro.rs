@@ -80,7 +80,7 @@ pub fn start_pomodoro(
 }
 
 #[tauri::command]
-pub fn complete_pomodoro(
+pub async fn complete_pomodoro(
     app: AppHandle,
     store_lock: tauri::State<'_, crate::StoreLock>,
     session_id: String,
@@ -163,6 +163,11 @@ pub fn complete_pomodoro(
     let _ =
         crate::progression::record_focus_session(&app, completed_work_duration, COINS_PER_POMODORO);
     let _ = crate::commands::pet::advance_focus_quest(&app, 1);
+
+    // Check for achievement unlocks
+    let completion_hour = chrono::Local::now().hour();
+    let _ = crate::commands::achievements::check_achievement_progress(app.clone(), store_lock.clone()).await;
+    let _ = crate::commands::achievements::check_time_achievement(app, store_lock, completion_hour).await;
 
     Ok(pet)
 }
