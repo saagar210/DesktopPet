@@ -31,7 +31,7 @@ pub async fn get_achievements(
             total_unlocked: 0,
             last_unlocked_id: None,
         };
-        store.set("achievement_state", serde_json::to_value(&new_state).unwrap());
+        store.set("achievement_state", &new_state).map_err(|e| e.to_string())?;
         store.save().map_err(|e| e.to_string())?;
         initialized
     } else {
