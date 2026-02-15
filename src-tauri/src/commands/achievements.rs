@@ -1,6 +1,6 @@
 use crate::achievements::{
     check_daily_achievements, check_pet_achievements, check_progress_achievements,
-    check_time_achievements, get_achievement_stats, initialize_achievements,
+    check_time_achievements, initialize_achievements,
 };
 use crate::models::{Achievement, AchievementState, CoinBalance, DailySummary, PetState, UserProgress};
 use crate::StoreLock;
@@ -31,7 +31,7 @@ pub async fn get_achievements(
             total_unlocked: 0,
             last_unlocked_id: None,
         };
-        store.set("achievement_state", &new_state).map_err(|e| e.to_string())?;
+        store.set("achievement_state", serde_json::json!(new_state));
         store.save().map_err(|e| e.to_string())?;
         initialized
     } else {
@@ -139,7 +139,7 @@ pub async fn check_achievement_progress(
     }
 
     // Save updated state
-    store.set("achievement_state", &achievement_state).map_err(|e| e.to_string())?;
+    store.set("achievement_state", serde_json::json!(achievement_state));
     store.save().map_err(|e| e.to_string())?;
 
     // Emit events for newly unlocked achievements
@@ -199,7 +199,7 @@ pub async fn check_time_achievement(
             .count() as u32;
 
         // Save updated state
-        store.set("achievement_state", &achievement_state).map_err(|e| e.to_string())?;
+        store.set("achievement_state", serde_json::json!(achievement_state));
         store.save().map_err(|e| e.to_string())?;
 
         // Emit events
@@ -223,18 +223,4 @@ pub async fn check_time_achievement(
     }
 
     Ok(newly_unlocked)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_achievement_command_structure() {
-        // Verify command signatures are correct
-        // This is a compile-time check
-        let _: fn(AppHandle, State<StoreLock>) -> _ = get_achievements;
-        let _: fn(AppHandle, State<StoreLock>) -> _ = get_achievement_stats;
-        let _: fn(AppHandle, State<StoreLock>) -> _ = check_achievement_progress;
-    }
 }

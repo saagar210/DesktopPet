@@ -81,22 +81,6 @@ npm run tauri build
 
 Build artifacts are written to `src-tauri/target/release/bundle/`.
 
-## Project Docs
+## Contributing
 
-- [Architecture](./docs/architecture.md)
-- [DesktopPet Expansion Plan](./docs/desktop-pet-expansion-plan.md)
-- [Security Model](./docs/security-model.md)
-- [Permission Matrix](./docs/permission-matrix.md)
-- [Pet Species Pack Format](./docs/pet-species-pack-format.md)
-- [Pack Author Regression Checklist](./docs/pack-author-regression-checklist.md)
-- [Performance Budget](./docs/performance-budget.md)
-- [Cuteness Style Guide](./docs/cuteness-style-guide.md)
-- [Evolution Validation Checklist](./docs/evolution-validation-checklist.md)
-- [Debugging](./docs/debugging.md)
-- [Operations Runbook](./docs/operations.md)
-- [Release Process](./docs/release.md)
-- [Manual QA Checklist](./docs/manual-qa-checklist.md)
-- [Manual QA Runs](./docs/manual-qa-runs/)
-- [Implementation Status](./docs/implementation-status.md)
-- [Next Phases Detailed Plan](./docs/next-phases-detailed-plan.md)
 - [Contributing](./CONTRIBUTING.md)

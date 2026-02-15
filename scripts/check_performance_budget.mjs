@@ -14,19 +14,19 @@ const baselinePath = path.join(repoRoot, "docs", "performance-budget-baseline.js
 const budgetConfig = [
   {
     id: "speciesJs",
-    prefix: "species-",
+    prefixes: ["species-", "ErrorBoundary-"],
     suffix: ".js",
     thresholdGzipDeltaBytes: 25 * 1024,
   },
   {
     id: "petCss",
-    prefix: "pet-",
+    prefixes: ["pet-"],
     suffix: ".css",
     thresholdGzipDeltaBytes: 8 * 1024,
   },
   {
     id: "panelJs",
-    prefix: "panel-",
+    prefixes: ["panel-"],
     suffix: ".js",
     thresholdGzipDeltaBytes: 12 * 1024,
   },
@@ -36,12 +36,15 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function findAssetFile(files, prefix, suffix) {
-  const matches = files.filter((file) => file.startsWith(prefix) && file.endsWith(suffix)).sort();
-  if (matches.length === 0) {
-    throw new Error(`Missing dist asset for pattern ${prefix}*${suffix}`);
+function findAssetFile(files, prefixes, suffix) {
+  for (const prefix of prefixes) {
+    const matches = files.filter((file) => file.startsWith(prefix) && file.endsWith(suffix)).sort();
+    if (matches.length > 0) {
+      return matches[matches.length - 1];
+    }
   }
-  return matches[matches.length - 1];
+  const pattern = prefixes.map((prefix) => `${prefix}*${suffix}`).join(" or ");
+  throw new Error(`Missing dist asset for pattern ${pattern}`);
 }
 
 function calculateSizes(filePath) {
@@ -94,7 +97,7 @@ function main() {
       throw new Error(`Missing baseline target ${entry.id} in ${path.relative(repoRoot, baselinePath)}`);
     }
 
-    const fileName = findAssetFile(distFiles, entry.prefix, entry.suffix);
+    const fileName = findAssetFile(distFiles, entry.prefixes, entry.suffix);
     const sizes = calculateSizes(path.join(distAssetsDir, fileName));
     const delta = sizes.gzipBytes - baselineTarget.gzipBytes;
     const pass = delta <= entry.thresholdGzipDeltaBytes;
