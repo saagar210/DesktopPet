@@ -1,3 +1,4 @@
+pub mod achievements;
 pub mod coins;
 pub mod customization;
 pub mod focus_guardrails;

@@ -20,6 +20,7 @@ It floats above your windows, reacts to interactions, and turns your Pomodoro se
 - **Quests + Events**: rolling events, active quests, and completion rewards
 - **Shop + Coins**: accessory catalog with ownership and purchase tracking
 - **Tasks + Daily Goals**: lightweight productivity tracking tied to session outcomes
+- **Achievements**: 20+ unlockable achievements across 5 categories (focus, streak, pet care, progression, special)
 - **Focus Guardrails**: allowlist/blocklist host matching, interventions, and event history
 - **Customization**: skins, scenes, themes, and saved loadouts
 - **Photo Booth**: user-triggered shareable pet card screenshots

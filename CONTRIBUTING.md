@@ -27,6 +27,113 @@ Or run the wrapper:
 ./scripts/verify.sh
 ```
 
+## Testing Patterns
+
+### Running Tests
+
+```bash
+# Frontend unit tests
+npm test                 # Run all frontend tests once
+npm run test:watch      # Watch mode for development
+npm run test:coverage   # Coverage report
+
+# Rust backend tests
+npm run test:rust       # Run all Rust tests
+npm run test:rust:release  # Release mode tests
+
+# Combined test suite
+npm run test:all        # Run frontend + Rust tests
+```
+
+### Frontend Testing Patterns
+
+**Hook Testing** (`src/hooks/__tests__/*.test.ts`)
+- Mock Tauri IPC with `vi.mock("../lib/tauri")`
+- Use `renderHook()` from @testing-library/react
+- Test state initialization, updates, and event listeners
+- Example:
+```typescript
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { usePomodoro } from "../usePomodoro";
+
+it("should start timer", async () => {
+  const { result } = renderHook(() => usePomodoro());
+  await act(async () => {
+    await result.current.start();
+  });
+  await waitFor(() => {
+    expect(result.current.state.phase).toBe("work");
+  });
+});
+```
+
+**Component Testing** (`src/components/**/__tests__/*.test.tsx`)
+- Use `render()` from @testing-library/react
+- Test prop handling, user interactions, and rendering
+- Use `screen.getByRole()`, `screen.getByText()` for queries
+
+**Error Boundary Testing**
+- ErrorBoundary catches React errors
+- Location: `src/components/shared/ErrorBoundary.tsx`
+- Tests verify fallback UI displays on component errors
+
+### Rust Testing Patterns
+
+**Integration Tests** (`src-tauri/src/tests/mod.rs`)
+- Use `fixtures` module for creating default test states
+- Helper functions: `default_app_state()`, `create_test_session()`, `create_test_task()`
+- Group related tests in modules: `timer_coins_flow`, `pet_interaction_flow`, `edge_cases`
+- Example:
+```rust
+#[test]
+fn test_pomodoro_session_creation() {
+    let session = create_test_session(25);
+    assert_eq!(session.duration_minutes, 25);
+}
+```
+
+**Command Testing**
+- Each command module has unit tests
+- Mock store with test state using `StoreLock`
+- Test both success and error paths
+- Verify event emissions
+
+### Test Coverage Goals
+
+| Layer | Target | Current |
+|-------|--------|---------|
+| Frontend Components | ≥ 80% | ~85% |
+| Frontend Hooks | ≥ 70% | ~60% (scaffolding) |
+| Rust Commands | ≥ 70% | ~90% |
+| Pet System | ≥ 80% | ~95% |
+| Achievement System | ≥ 70% | ~75% |
+
+### Achievement System Architecture
+
+The achievement system tracks user milestones across 5 categories:
+
+**Backend (`src-tauri/src/achievements.rs`)**:
+- 20 achievements: focus (5), streak (4), pet care (4), progression (4), special (3)
+- Unlock triggers: session completion, pet interactions, daily summaries
+- Automatic checks via `check_achievement_progress()` and `check_time_achievement()`
+- Event emission on unlock: `achievement_unlocked` with ID, title, icon
+
+**Commands (`src-tauri/src/commands/achievements.rs`)**:
+- `get_achievements()` - Load all achievements with unlock status
+- `get_achievement_stats()` - Summary stats (unlocked count by category)
+- `check_achievement_progress()` - Evaluate progress-based achievements
+- `check_time_achievement(hour)` - Check time-based (early bird, night owl)
+
+**Frontend (`src/hooks/useAchievements.ts`)**:
+- Reactive state management with event listeners
+- Filter by category/status, calculate progress percentages
+- Components: AchievementBadge, AchievementsPanel
+
+**Integration Points**:
+- `complete_pomodoro()` - Triggers achievement checks after session
+- Pet interactions - Check first_interaction achievement
+- Daily summary updates - Check marathon/perfectionist achievements
+
 ## Code Standards
 
 - Keep diffs focused and minimal.

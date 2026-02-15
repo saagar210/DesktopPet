@@ -1,8 +1,12 @@
+mod achievements;
 mod commands;
 mod events;
 mod models;
 mod progression;
 mod storage;
+
+#[cfg(test)]
+mod tests;
 
 use crate::events::{
     EVENT_TRAY_SET_PRESET, EVENT_TRAY_TIMER_PAUSE, EVENT_TRAY_TIMER_RESET, EVENT_TRAY_TIMER_RESUME,
@@ -24,6 +28,10 @@ pub fn run() {
         .manage(StoreLock(Mutex::new(())))
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            commands::achievements::get_achievements,
+            commands::achievements::get_achievement_stats,
+            commands::achievements::check_achievement_progress,
+            commands::achievements::check_time_achievement,
             commands::pet::get_pet_state,
             commands::pet::set_pet_animation,
             commands::pet::pet_interact,

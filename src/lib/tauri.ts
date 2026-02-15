@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type EventCallback } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import type { Achievement, AchievementStats } from "../store/types";
 
 const noop = () => {};
 
@@ -64,4 +65,30 @@ export function startDraggingSafe() {
   } catch (error) {
     warn("startDragging", error);
   }
+}
+
+// Achievement commands
+export async function getAchievements(): Promise<Achievement[]> {
+  return invokeOr<Achievement[]>("get_achievements", undefined, [], "achievements:get");
+}
+
+export async function getAchievementStats(): Promise<AchievementStats> {
+  return invokeOr<AchievementStats>(
+    "get_achievement_stats",
+    undefined,
+    { total: 0, unlocked: 0, locked: 0 },
+    "achievements:stats"
+  );
+}
+
+export async function checkAchievementProgress(): Promise<string[] | null> {
+  return invokeMaybe<string[]>("check_achievement_progress", undefined, "achievements:check");
+}
+
+export async function checkTimeAchievement(completionHour: number): Promise<string[] | null> {
+  return invokeMaybe<string[]>(
+    "check_time_achievement",
+    { completionHour },
+    "achievements:check-time"
+  );
 }
