@@ -45,46 +45,36 @@ mod fixtures {
 
     fn default_pet_state() -> PetState {
         PetState {
-            id: Uuid::new_v4().to_string(),
-            name: "Test Pet".to_string(),
-            species: "penguin".to_string(),
-            stage: 1,
-            xp_to_next_stage: 0,
-            care_stats: CareStats {
-                energy: 80,
-                hunger: 20,
-                cleanliness: 80,
-                affection: 50,
-            },
-            mood: "happy".to_string(),
+            current_stage: 1,
             animation_state: "idle".to_string(),
-            last_interaction: chrono::Local::now().to_rfc3339(),
-            last_care_decay: chrono::Local::now().to_rfc3339(),
-            customization: PetCustomization {
-                equipped_accessories: vec![],
-                skin: "classic".to_string(),
-                scene: "default".to_string(),
-            },
-            events: PetEventState {
-                active_quests: vec![],
-                event_history: vec![],
-                seasonal_pack: None,
-            },
+            accessories: vec![],
+            total_pomodoros: 0,
+            species_id: "penguin".to_string(),
+            evolution_thresholds: vec![0, 5, 15],
+            mood: "content".to_string(),
+            energy: 80,
+            hunger: 20,
+            cleanliness: 80,
+            affection: 50,
+            personality: "balanced".to_string(),
+            evolution_path: "undetermined".to_string(),
+            skin: "classic".to_string(),
+            scene: "meadow".to_string(),
+            last_interaction: Some(chrono::Utc::now().to_rfc3339()),
+            last_care_update_at: chrono::Utc::now().to_rfc3339(),
         }
     }
 
     fn default_user_progress() -> UserProgress {
         UserProgress {
-            id: Uuid::new_v4().to_string(),
+            xp_total: 0,
             level: 1,
-            total_xp: 0,
-            coins: 100,
             streak_days: 0,
-            streak_last_date: None,
-            total_pomodoros: 0,
+            longest_streak: 0,
+            last_active_date: None,
+            total_sessions: 0,
             total_focus_minutes: 0,
-            daily_summaries: vec![],
-            achievements_unlocked: vec![],
+            total_tasks_completed: 0,
         }
     }
 

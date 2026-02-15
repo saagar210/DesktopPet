@@ -56,7 +56,7 @@ pub async fn get_achievement_stats(
         .and_then(|v| serde_json::from_value(v.clone()).ok())
         .unwrap_or_default();
 
-    Ok(get_achievement_stats(&achievement_state.achievements))
+    Ok(crate::achievements::get_achievement_stats(&achievement_state.achievements))
 }
 
 /// Check and update achievement progress (called after significant events)
@@ -83,16 +83,7 @@ pub async fn check_achievement_progress(
     let user_progress: UserProgress = store
         .get("user_progress")
         .and_then(|v| serde_json::from_value(v.clone()).ok())
-        .unwrap_or_else(|| UserProgress {
-            xp_total: 0,
-            level: 1,
-            streak_days: 0,
-            longest_streak: 0,
-            last_active_date: None,
-            total_sessions: 0,
-            total_focus_minutes: 0,
-            total_tasks_completed: 0,
-        });
+        .unwrap_or_default();
 
     let pet: PetState = store
         .get("pet")
@@ -126,8 +117,8 @@ pub async fn check_achievement_progress(
     );
     all_newly_unlocked.extend(newly_unlocked);
 
-    // Check daily achievements if there's a recent summary
-    if let Some(latest_summary) = daily_summaries.last() {
+    // Check daily achievements if there's a recent summary (newest first)
+    if let Some(latest_summary) = daily_summaries.first() {
         let newly_unlocked = check_daily_achievements(
             &mut achievement_state.achievements,
             latest_summary,
@@ -148,7 +139,7 @@ pub async fn check_achievement_progress(
     }
 
     // Save updated state
-    store.set("achievement_state", serde_json::to_value(&achievement_state).unwrap());
+    store.set("achievement_state", &achievement_state).map_err(|e| e.to_string())?;
     store.save().map_err(|e| e.to_string())?;
 
     // Emit events for newly unlocked achievements
@@ -189,6 +180,11 @@ pub async fn check_time_achievement(
         .and_then(|v| serde_json::from_value(v.clone()).ok())
         .unwrap_or_default();
 
+    // Initialize if needed
+    if achievement_state.achievements.is_empty() {
+        achievement_state.achievements = initialize_achievements();
+    }
+
     let newly_unlocked = check_time_achievements(
         &mut achievement_state.achievements,
         completion_hour,
@@ -203,7 +199,7 @@ pub async fn check_time_achievement(
             .count() as u32;
 
         // Save updated state
-        store.set("achievement_state", serde_json::to_value(&achievement_state).unwrap());
+        store.set("achievement_state", &achievement_state).map_err(|e| e.to_string())?;
         store.save().map_err(|e| e.to_string())?;
 
         // Emit events

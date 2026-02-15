@@ -1,6 +1,10 @@
 use crate::models::{Achievement, AchievementState, UserProgress, PetState, DailySummary};
 use std::collections::HashMap;
 
+/// Time cutoffs for time-based achievements
+const EARLY_BIRD_HOUR_CUTOFF: u32 = 8;
+const NIGHT_OWL_HOUR_START: u32 = 22;
+
 /// Initialize all achievements with default locked state
 pub fn initialize_achievements() -> Vec<Achievement> {
     vec![
@@ -266,6 +270,11 @@ pub fn check_pet_achievements(
 ) -> Vec<String> {
     let mut newly_unlocked = Vec::new();
 
+    // First interaction achievement
+    if pet.last_interaction.is_some() {
+        check_and_unlock(achievements, "first_interaction", 1, &mut newly_unlocked);
+    }
+
     // Pet evolution achievements
     if pet.current_stage >= 2 {
         check_and_unlock(achievements, "pet_evolved", 1, &mut newly_unlocked);
@@ -314,12 +323,12 @@ pub fn check_time_achievements(
     let mut newly_unlocked = Vec::new();
 
     // Early bird (before 8am)
-    if completion_hour < 8 {
+    if completion_hour < EARLY_BIRD_HOUR_CUTOFF {
         check_and_unlock(achievements, "early_bird", 1, &mut newly_unlocked);
     }
 
     // Night owl (after 10pm)
-    if completion_hour >= 22 {
+    if completion_hour >= NIGHT_OWL_HOUR_START {
         check_and_unlock(achievements, "night_owl", 1, &mut newly_unlocked);
     }
 

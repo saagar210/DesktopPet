@@ -50,7 +50,7 @@ pub fn run() {
             commands::progress::get_daily_summaries,
             commands::focus_guardrails::evaluate_focus_guardrails,
             commands::focus_guardrails::apply_focus_guardrails_intervention,
-            commands::focus_guardrails::get_focus_guardrails_events,
+            commands::focus_guardrails::get_focus_guardrail_events,
             commands::customization::get_customization_loadouts,
             commands::customization::save_customization_loadout,
             commands::customization::apply_customization_loadout,
