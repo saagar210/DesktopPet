@@ -1,4 +1,5 @@
 use serde_json::json;
+use chrono::Timelike;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_store::StoreExt;
 
@@ -163,6 +164,9 @@ pub async fn complete_pomodoro(
     let _ =
         crate::progression::record_focus_session(&app, completed_work_duration, COINS_PER_POMODORO);
     let _ = crate::commands::pet::advance_focus_quest(&app, 1);
+
+    // Release the store lock before invoking nested commands that lock the store.
+    drop(_guard);
 
     // Check for achievement unlocks
     let completion_hour = chrono::Local::now().hour();

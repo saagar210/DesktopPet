@@ -1,4 +1,4 @@
-use crate::models::{Achievement, AchievementState, UserProgress, PetState, DailySummary};
+use crate::models::{Achievement, DailySummary, PetState, UserProgress};
 use std::collections::HashMap;
 
 /// Time cutoffs for time-based achievements
