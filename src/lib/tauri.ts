@@ -65,3 +65,24 @@ export function startDraggingSafe() {
     warn("startDragging", error);
   }
 }
+
+// Achievement commands
+export async function getAchievements() {
+  return invokeOr("get_achievements", undefined, [], "achievements:get");
+}
+
+export async function getAchievementStats() {
+  return invokeOr("get_achievement_stats", undefined, {}, "achievements:stats");
+}
+
+export async function checkAchievementProgress() {
+  return invokeMaybe<string[]>("check_achievement_progress", undefined, "achievements:check");
+}
+
+export async function checkTimeAchievement(completionHour: number) {
+  return invokeMaybe<string[]>(
+    "check_time_achievement",
+    { completionHour },
+    "achievements:check-time"
+  );
+}

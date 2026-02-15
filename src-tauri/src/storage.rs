@@ -2,7 +2,7 @@ use serde_json::json;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
-use crate::models::{CoinBalance, PetState, Settings, TimerRuntimeState, CURRENT_SCHEMA_VERSION};
+use crate::models::{AchievementState, CoinBalance, PetState, Settings, TimerRuntimeState, CURRENT_SCHEMA_VERSION};
 
 fn normalized_schema(existing: Option<u64>) -> u32 {
     existing
@@ -29,6 +29,9 @@ pub fn ensure_schema_version(app: &AppHandle) -> Result<u32, String> {
     }
     if store.get("coins").is_none() {
         store.set("coins", json!(CoinBalance::default()));
+    }
+    if store.get("achievement_state").is_none() {
+        store.set("achievement_state", json!(AchievementState::default()));
     }
 
     Ok(current)

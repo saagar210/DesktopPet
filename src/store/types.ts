@@ -187,6 +187,42 @@ export interface FocusGuardrailEvent {
   createdAt: string;
 }
 
+export type AchievementCategory = "focus" | "streak" | "pet" | "progression" | "special";
+
+export interface Achievement {
+  id: string;
+  category: AchievementCategory;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: string | null;
+  progress: number;
+  target: number;
+  hidden: boolean;
+}
+
+export interface AchievementState {
+  achievements: Achievement[];
+  totalUnlocked: number;
+  lastUnlockedId: string | null;
+}
+
+export interface AchievementStats {
+  total: number;
+  unlocked: number;
+  locked: number;
+  focus_total?: number;
+  focus_unlocked?: number;
+  streak_total?: number;
+  streak_unlocked?: number;
+  pet_total?: number;
+  pet_unlocked?: number;
+  progression_total?: number;
+  progression_unlocked?: number;
+  special_total?: number;
+  special_unlocked?: number;
+}
+
 export interface AppState {
   pet: PetState;
   coins: CoinBalance;

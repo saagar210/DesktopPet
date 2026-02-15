@@ -1,3 +1,4 @@
+mod achievements;
 mod commands;
 mod events;
 mod models;
@@ -27,6 +28,10 @@ pub fn run() {
         .manage(StoreLock(Mutex::new(())))
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            commands::achievements::get_achievements,
+            commands::achievements::get_achievement_stats,
+            commands::achievements::check_achievement_progress,
+            commands::achievements::check_time_achievement,
             commands::pet::get_pet_state,
             commands::pet::set_pet_animation,
             commands::pet::pet_interact,
@@ -45,7 +50,7 @@ pub fn run() {
             commands::progress::get_daily_summaries,
             commands::focus_guardrails::evaluate_focus_guardrails,
             commands::focus_guardrails::apply_focus_guardrails_intervention,
-            commands::focus_guardrails::get_focus_guardrail_events,
+            commands::focus_guardrails::get_focus_guardrails_events,
             commands::customization::get_customization_loadouts,
             commands::customization::save_customization_loadout,
             commands::customization::apply_customization_loadout,

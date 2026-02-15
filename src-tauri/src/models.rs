@@ -488,6 +488,50 @@ pub struct AppDiagnostics {
     pub has_active_quest: bool,
 }
 
+// --- Achievement System ---
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Achievement {
+    pub id: String,
+    pub category: String,
+    pub title: String,
+    pub description: String,
+    pub icon: String,
+    pub unlocked_at: Option<String>,
+    pub progress: u32,
+    pub target: u32,
+    pub hidden: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementState {
+    pub achievements: Vec<Achievement>,
+    pub total_unlocked: u32,
+    pub last_unlocked_id: Option<String>,
+}
+
+impl Default for AchievementState {
+    fn default() -> Self {
+        Self {
+            achievements: vec![],
+            total_unlocked: 0,
+            last_unlocked_id: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AchievementStats {
+    pub total_unlocked: u32,
+    pub total_achievements: u32,
+    pub by_category: std::collections::HashMap<String, u32>,
+    pub recent_unlocks: Vec<Achievement>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
