@@ -106,6 +106,33 @@ fn test_pomodoro_session_creation() {
 | Frontend Hooks | ≥ 70% | ~60% (scaffolding) |
 | Rust Commands | ≥ 70% | ~90% |
 | Pet System | ≥ 80% | ~95% |
+| Achievement System | ≥ 70% | ~75% |
+
+### Achievement System Architecture
+
+The achievement system tracks user milestones across 5 categories:
+
+**Backend (`src-tauri/src/achievements.rs`)**:
+- 20 achievements: focus (5), streak (4), pet care (4), progression (4), special (3)
+- Unlock triggers: session completion, pet interactions, daily summaries
+- Automatic checks via `check_achievement_progress()` and `check_time_achievement()`
+- Event emission on unlock: `achievement_unlocked` with ID, title, icon
+
+**Commands (`src-tauri/src/commands/achievements.rs`)**:
+- `get_achievements()` - Load all achievements with unlock status
+- `get_achievement_stats()` - Summary stats (unlocked count by category)
+- `check_achievement_progress()` - Evaluate progress-based achievements
+- `check_time_achievement(hour)` - Check time-based (early bird, night owl)
+
+**Frontend (`src/hooks/useAchievements.ts`)**:
+- Reactive state management with event listeners
+- Filter by category/status, calculate progress percentages
+- Components: AchievementBadge, AchievementsPanel
+
+**Integration Points**:
+- `complete_pomodoro()` - Triggers achievement checks after session
+- Pet interactions - Check first_interaction achievement
+- Daily summary updates - Check marathon/perfectionist achievements
 
 ## Code Standards
 
