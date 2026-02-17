@@ -4,10 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "path";
 
 const host = process.env.TAURI_DEV_HOST;
+const leanCacheDir = process.env.DESKTOPPET_VITE_CACHE_DIR;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   clearScreen: false,
+  cacheDir: leanCacheDir || "node_modules/.vite",
   server: {
     port: 5173,
     strictPort: true,

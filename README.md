@@ -57,6 +57,49 @@ npm run test:pack-qa
 npm run tauri dev
 ```
 
+### Lean Dev (low disk mode)
+
+Use this when you want to keep local disk usage down while developing:
+
+```bash
+npm install
+npm run dev:lean
+```
+
+What `npm run dev:lean` does:
+- Starts the app with the normal `npm run tauri dev` flow.
+- Redirects heavy build caches to temporary directories (Cargo target + Vite cache).
+- Automatically removes temporary caches and heavy build artifacts when you exit the app.
+- Prints before/after disk usage snapshots for major bloat paths.
+
+Disk vs speed tradeoff:
+- Lean mode uses less persistent disk.
+- Lean mode is usually slower on next startup because caches are rebuilt.
+- Normal `npm run tauri dev` keeps caches in-repo for faster repeated starts.
+
+### Cleanup commands
+
+Target heavy build artifacts only:
+
+```bash
+npm run clean:heavy
+```
+
+This removes:
+- `dist/`
+- `artifacts/`
+- `src-tauri/target/`
+- `node_modules/.vite/`
+
+Full local reproducible cleanup:
+
+```bash
+npm run clean:all
+```
+
+This runs `clean:heavy` and also removes:
+- `node_modules/`
+
 ## Verification
 
 ```bash
